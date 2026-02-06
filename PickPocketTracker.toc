@@ -1,7 +1,7 @@
-## Interface: 50503
-## Version: 1.6.5
-## Title: Achievements Back Button
-## Author: LudiusMaximus
+## Interface: 120000
+## Version: 0.0.1
+## Title: Pick Pocket Tracker
+## Author: Scrooge-McDucks
 ## Notes: Tracks gold gained from Pick Pocket 
 
 PocketProfit.lua
