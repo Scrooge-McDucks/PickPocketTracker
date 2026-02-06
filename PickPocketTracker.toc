@@ -1,0 +1,7 @@
+## Interface: 50503
+## Version: 1.6.5
+## Title: Achievements Back Button
+## Author: LudiusMaximus
+## Notes: Tracks gold gained from Pick Pocket 
+
+PocketProfit.lua

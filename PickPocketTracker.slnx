@@ -1,1 +1,6 @@
-<Solution />
+<Solution>
+  <Folder Name="/PickPocketTracker/">
+    <File Path="PickPocketTracker.toc" />
+    <File Path="PocketProfit.lua" />
+  </Folder>
+</Solution>
