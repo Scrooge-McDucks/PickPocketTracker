@@ -3,5 +3,6 @@
 ## Title: Pick Pocket Tracker
 ## Author: Scrooge-McDucks
 ## Notes: Tracks gold gained from Pick Pocket 
+## SavedVariables: PocketProfitDB
 
 PocketProfit.lua
