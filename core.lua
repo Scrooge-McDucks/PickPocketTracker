@@ -1,7 +1,20 @@
 local _, NS = ...
 
-local function printSessionTotal()
-  NS.msg("66ffcc", "Pickpocket gold this session: " .. NS.formatGSC(NS.PP.sessionCopper))
+local goldFrame
+
+local function applyVisibility()
+  if not goldFrame then return end
+  if PickPocketTrackerDB.hidden then
+    goldFrame:Hide()
+  else
+    goldFrame:Show()
+  end
+end
+
+local function updateWindow()
+  if goldFrame then
+    goldFrame:SetCopper(NS.PP.sessionCopper)
+  end
 end
 
 -- ---------- Events ----------
@@ -13,7 +26,12 @@ f:RegisterEvent("PLAYER_MONEY")
 f:SetScript("OnEvent", function(_, event, ...)
   if event == "PLAYER_LOGIN" then
     NS.PP:OnLogin()
-    NS.msg("aaaaaa", "loaded. Use /pp to print session total.")
+
+    goldFrame = NS.CreateGoldWindow()
+    updateWindow()
+    applyVisibility()
+
+    NS.info("loaded. /pp shows total, /pp hide/show toggles window.")
     return
   end
 
@@ -27,8 +45,9 @@ f:SetScript("OnEvent", function(_, event, ...)
 
   if event == "PLAYER_MONEY" then
     local added = NS.PP:OnMoneyChanged()
-    -- keep it quiet by default; uncomment if you want per-hit spam while learning
-    -- if added > 0 then NS.msg("aaaaaa", "Picked: +" .. NS.formatGSC(added)) end
+    if added > 0 then
+      updateWindow()
+    end
     return
   end
 end)
@@ -38,10 +57,24 @@ SLASH_PICKPOCKETTRACKER1 = "/pp"
 SlashCmdList["PICKPOCKETTRACKER"] = function(msg)
   msg = (msg or ""):lower()
 
+  if msg == "hide" then
+    PickPocketTrackerDB.hidden = true
+    applyVisibility()
+    NS.warn("window hidden")
+    return
+  end
+
+  if msg == "show" then
+    PickPocketTrackerDB.hidden = false
+    applyVisibility()
+    NS.warn("window shown")
+    return
+  end
+
   if msg == "reset" then
     NS.PP:ResetSession()
-    NS.msg("ffcc66", "Session reset.")
-    printSessionTotal()
+    updateWindow()
+    NS.warn("session reset")
     return
   end
 
@@ -50,13 +83,25 @@ SlashCmdList["PICKPOCKETTRACKER"] = function(msg)
     sec = tonumber(sec)
     if sec and sec > 0 and sec <= 10 then
       NS.PP:SetWindowSeconds(sec)
-      NS.msg("ffcc66", string.format("Window set to %.1fs", sec))
+      NS.warn(string.format("window set to %.1fs", sec))
     else
-      NS.msg("ff6666", "Usage: /pp window 2.0  (0.1 to 10)")
+      NS.err("usage: /pp window 2.0 (0.1 to 10)")
     end
     return
   end
 
-  -- default: print session total
-  printSessionTotal()
+  if msg == "skin plumber" then
+    PickPocketTrackerDB.usePlumberSkin = true
+    NS.info("Plumber skin enabled (reload UI to apply)")
+    return
+  end
+
+  if msg == "skin default" then
+    PickPocketTrackerDB.usePlumberSkin = false
+    NS.info("Default skin enabled (reload UI to apply)")
+    return
+  end
+
+  -- Default: print total to chat
+  NS.ok("Pickpocket haul this session: " .. NS.formatGSC(NS.PP.sessionCopper))
 end

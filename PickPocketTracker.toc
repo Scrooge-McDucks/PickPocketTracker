@@ -2,7 +2,9 @@
 ## Version: 0.0.1
 ## Title: Pick Pocket Tracker
 ## Author: Scrooge-McDucks
-## Notes: Prints a message when you enter/exit stealth.
+## Notes: Tracks pickpocket gold per session and shows a static counter window.
+## SavedVariables: PickPocketTrackerDB
+## OptionalDeps: Plumber
 
 init.lua
 utils.lua
