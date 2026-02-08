@@ -1,3 +1,10 @@
+-- core.lua
+-- Event wiring + slash commands for Pick Pocket Tracker
+--
+-- Efficiency notes:
+--  - We only update the UI when pickpocket-related money increases.
+--  - We avoid extra work during events that don't matter.
+
 local _, NS = ...
 
 local goldFrame
@@ -31,7 +38,7 @@ f:SetScript("OnEvent", function(_, event, ...)
     updateWindow()
     applyVisibility()
 
-    NS.info("loaded. /pp shows total, /pp hide/show toggles window.")
+    NS.info("loaded. /pp prints total. /pp hide|show toggles window. /pp lock|unlock toggles resize (Shift-drag still moves). /pp icon on|off.")
     return
   end
 
@@ -68,6 +75,39 @@ SlashCmdList["PICKPOCKETTRACKER"] = function(msg)
     PickPocketTrackerDB.hidden = false
     applyVisibility()
     NS.warn("window shown")
+    return
+  end
+
+  if msg == "lock" then
+    PickPocketTrackerDB.locked = true
+    if goldFrame and goldFrame.ResizeGrip then goldFrame.ResizeGrip:Hide() end
+    NS.warn("window locked (resize disabled; Shift-drag still moves)")
+    return
+  end
+
+  if msg == "unlock" then
+    PickPocketTrackerDB.locked = false
+    if goldFrame and goldFrame.ResizeGrip then goldFrame.ResizeGrip:Show() end
+    NS.warn("window unlocked (drag+resize enabled)")
+    return
+  end
+
+  -- /pp icon on|off
+  local iconArg = msg:match("^icon%s+(%S+)$")
+  if iconArg then
+    if iconArg == "on" then
+      PickPocketTrackerDB.showIcon = true
+      if goldFrame and goldFrame.ApplyIconSetting then goldFrame:ApplyIconSetting() end
+      NS.warn("icon shown")
+      return
+    end
+    if iconArg == "off" then
+      PickPocketTrackerDB.showIcon = false
+      if goldFrame and goldFrame.ApplyIconSetting then goldFrame:ApplyIconSetting() end
+      NS.warn("icon hidden")
+      return
+    end
+    NS.err("usage: /pp icon on | /pp icon off")
     return
   end
 
