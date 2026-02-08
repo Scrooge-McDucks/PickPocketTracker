@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/PickPocketTracker/">
+    <File Path="core.lua" />
+    <File Path="init.lua" />
     <File Path="PickPocketTracker.toc" />
-    <File Path="PocketProfit.lua" />
+    <File Path="utils.lua" />
   </Folder>
 </Solution>

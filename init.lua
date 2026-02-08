@@ -1,0 +1,3 @@
+-- Shared namespace used by the other files.
+local ADDON_NAME, NS = ...
+NS.name = ADDON_NAME
