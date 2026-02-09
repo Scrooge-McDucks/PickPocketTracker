@@ -19,6 +19,12 @@ if PickPocketTrackerDB.usePlumberSkin == nil then PickPocketTrackerDB.usePlumber
 if PickPocketTrackerDB.locked == nil then PickPocketTrackerDB.locked = false end
 if PickPocketTrackerDB.showIcon == nil then PickPocketTrackerDB.showIcon = true end
 
+-- Minimap button settings
+if PickPocketTrackerDB.minimap == nil then PickPocketTrackerDB.minimap = {} end
+if PickPocketTrackerDB.minimap.hide == nil then PickPocketTrackerDB.minimap.hide = false end
+if PickPocketTrackerDB.minimap.angle == nil then PickPocketTrackerDB.minimap.angle = 220 end
+if PickPocketTrackerDB.minimap.radius == nil then PickPocketTrackerDB.minimap.radius = 80 end
+
 -- Saved position
 if PickPocketTrackerDB.point == nil then PickPocketTrackerDB.point = "CENTER" end
 if PickPocketTrackerDB.relPoint == nil then PickPocketTrackerDB.relPoint = "CENTER" end
@@ -72,7 +78,7 @@ function NS.formatGSC(copper)
   local sIcon = ("|TInterface/MoneyFrame/UI-SilverIcon:%d:%d:0:0|t"):format(size, size)
   local cIcon = ("|TInterface/MoneyFrame/UI-CopperIcon:%d:%d:0:0|t"):format(size, size)
 
-  -- Keep it compact: if 0g, still show 0g so it’s obvious what’s going on
+  -- Keep it compact: if 0g, still show 0g so its obvious whats going on
   return string.format("%d%s %d%s %d%s", gold, gIcon, silver, sIcon, cop, cIcon)
 end
 
@@ -296,6 +302,12 @@ function NS.CreateGoldWindow()
   local function anchorTextWithIcon()
     txt:ClearAllPoints()
     if PickPocketTrackerDB.showIcon then
+
+-- Minimap button settings
+if PickPocketTrackerDB.minimap == nil then PickPocketTrackerDB.minimap = {} end
+if PickPocketTrackerDB.minimap.hide == nil then PickPocketTrackerDB.minimap.hide = false end
+if PickPocketTrackerDB.minimap.angle == nil then PickPocketTrackerDB.minimap.angle = 220 end
+if PickPocketTrackerDB.minimap.radius == nil then PickPocketTrackerDB.minimap.radius = 80 end
       icon:Show()
       txt:SetPoint("LEFT", icon, "RIGHT", 4, 0)
     else

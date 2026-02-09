@@ -38,6 +38,14 @@ f:SetScript("OnEvent", function(_, event, ...)
     updateWindow()
     applyVisibility()
 
+    -- minimap icon
+    if NS.Minimap and NS.Minimap.Create then
+      NS.Minimap:Create(function()
+        PickPocketTrackerDB.hidden = not PickPocketTrackerDB.hidden
+        applyVisibility()
+      end)
+    end
+
     NS.info("loaded. /pp prints total. /pp hide|show toggles window. /pp lock|unlock toggles resize (Shift-drag still moves). /pp icon on|off.")
     return
   end
@@ -91,6 +99,34 @@ SlashCmdList["PICKPOCKETTRACKER"] = function(msg)
     NS.warn("window unlocked (drag+resize enabled)")
     return
   end
+
+  -- /pp minimap on|off
+  local mmArg = msg:match("^minimap%s+(%S+)$")
+  if mmArg then
+    PickPocketTrackerDB.minimap = PickPocketTrackerDB.minimap or {}
+    if mmArg == "on" then
+      PickPocketTrackerDB.minimap.hide = false
+      if NS.Minimap and NS.Minimap.Apply then NS.Minimap:Apply() end
+      NS.warn("minimap icon shown")
+      return
+    end
+    if mmArg == "off" then
+      PickPocketTrackerDB.minimap.hide = true
+      if NS.Minimap and NS.Minimap.Apply then NS.Minimap:Apply() end
+      NS.warn("minimap icon hidden")
+      return
+    end
+    if mmArg == "reset" then
+      PickPocketTrackerDB.minimap.angle = 220
+      PickPocketTrackerDB.minimap.radius = 80
+      if NS.Minimap and NS.Minimap.Apply then NS.Minimap:Apply() end
+      NS.warn("minimap icon position reset")
+      return
+    end
+    NS.err("usage: /pp minimap on | /pp minimap off | /pp minimap reset")
+    return
+  end
+
 
   -- /pp icon on|off
   local iconArg = msg:match("^icon%s+(%S+)$")

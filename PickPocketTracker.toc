@@ -8,4 +8,5 @@
 
 init.lua
 utils.lua
+minimap.lua
 core.lua
