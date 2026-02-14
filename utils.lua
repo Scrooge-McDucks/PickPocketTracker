@@ -1,435 +1,219 @@
--- utils.lua
--- Shared helpers + UI for Pick Pocket Tracker
---
--- Efficiency notes:
---  - UI elements (frame, textures, fontstrings) are created ONCE at login.
---  - We only update the displayed text when money actually increases via pickpocket window logic.
---  - Resizing updates skin/text only while actively resizing (OnSizeChanged during drag).
-
+-- Utility functions
 local _, NS = ...
 
--- =========================================================
--- SavedVariables (persist between sessions)
--- =========================================================
-PickPocketTrackerDB = PickPocketTrackerDB or {}
+NS.Utils = {}
 
--- UI toggles
-if PickPocketTrackerDB.hidden == nil then PickPocketTrackerDB.hidden = false end
-if PickPocketTrackerDB.usePlumberSkin == nil then PickPocketTrackerDB.usePlumberSkin = true end
-if PickPocketTrackerDB.locked == nil then PickPocketTrackerDB.locked = false end
-if PickPocketTrackerDB.showIcon == nil then PickPocketTrackerDB.showIcon = true end
-
--- Minimap button settings
-if PickPocketTrackerDB.minimap == nil then PickPocketTrackerDB.minimap = {} end
-if PickPocketTrackerDB.minimap.hide == nil then PickPocketTrackerDB.minimap.hide = false end
-if PickPocketTrackerDB.minimap.angle == nil then PickPocketTrackerDB.minimap.angle = 220 end
-if PickPocketTrackerDB.minimap.radius == nil then PickPocketTrackerDB.minimap.radius = 80 end
-
--- Saved position
-if PickPocketTrackerDB.point == nil then PickPocketTrackerDB.point = "CENTER" end
-if PickPocketTrackerDB.relPoint == nil then PickPocketTrackerDB.relPoint = "CENTER" end
-if PickPocketTrackerDB.x == nil then PickPocketTrackerDB.x = 0 end
-if PickPocketTrackerDB.y == nil then PickPocketTrackerDB.y = 180 end
-
--- Saved size (compact defaults because the frame is resizable)
-if PickPocketTrackerDB.w == nil then PickPocketTrackerDB.w = 165 end
-if PickPocketTrackerDB.h == nil then PickPocketTrackerDB.h = 26 end
-
--- =========================================================
--- Colours + chat helpers
--- =========================================================
-NS.COL = {
-  TAG  = "00ff66",
-  INFO = "aaaaaa",
-  GOOD = "66ffcc",
-  WARN = "ffcc66",
-  BAD  = "ff6666",
-}
-
-local function color(hex, text)
+-- Chat output
+local function ColorText(hex, text)
   return "|cff" .. hex .. tostring(text) .. "|r"
 end
 
-NS.tag = color(NS.COL.TAG, (NS.name or "PickPocketTracker") .. ":") .. " "
+local function GetAddonTag()
+  local tagColor = NS.Config:GetColor("TAG")
+  local addonName = NS.Config.ADDON_NAME
+  return ColorText(tagColor, addonName .. ":") .. " "
+end
 
-function NS.msg(hex, text)
+function NS.Utils:Print(hex, text)
   if hex then
-    print(NS.tag .. color(hex, text))
+    print(GetAddonTag() .. ColorText(hex, text))
   else
-    print(NS.tag .. tostring(text))
+    print(GetAddonTag() .. tostring(text))
   end
 end
 
-function NS.info(text) NS.msg(NS.COL.INFO, text) end
-function NS.ok(text)   NS.msg(NS.COL.GOOD, text) end
-function NS.warn(text) NS.msg(NS.COL.WARN, text) end
-function NS.err(text)  NS.msg(NS.COL.BAD,  text) end
+function NS.Utils:PrintInfo(text)
+  self:Print(NS.Config:GetColor("INFO"), text)
+end
 
--- =========================================================
--- Money formatting (copper -> "9999g 99s 99c")
--- =========================================================
-function NS.formatGSC(copper)
+function NS.Utils:PrintSuccess(text)
+  self:Print(NS.Config:GetColor("GOOD"), text)
+end
+
+function NS.Utils:PrintWarning(text)
+  self:Print(NS.Config:GetColor("WARN"), text)
+end
+
+function NS.Utils:PrintError(text)
+  self:Print(NS.Config:GetColor("BAD"), text)
+end
+
+-- Money formatting
+function NS.Utils:FormatMoney(copper)
   local gold = math.floor(copper / 10000)
   local silver = math.floor((copper % 10000) / 100)
   local cop = copper % 100
-
-  local size = 14
-  local gIcon = ("|TInterface/MoneyFrame/UI-GoldIcon:%d:%d:0:0|t"):format(size, size)
-  local sIcon = ("|TInterface/MoneyFrame/UI-SilverIcon:%d:%d:0:0|t"):format(size, size)
-  local cIcon = ("|TInterface/MoneyFrame/UI-CopperIcon:%d:%d:0:0|t"):format(size, size)
-
-  -- Keep it compact: if 0g, still show 0g so its obvious whats going on
+  
+  local iconSize = NS.Config.MONEY_ICONS.size
+  local goldIcon = NS.Config.MONEY_ICONS.goldIcon
+  local silverIcon = NS.Config.MONEY_ICONS.silverIcon
+  local copperIcon = NS.Config.MONEY_ICONS.copperIcon
+  
+  local gIcon = ("|T%s:%d:%d:0:0|t"):format(goldIcon, iconSize, iconSize)
+  local sIcon = ("|T%s:%d:%d:0:0|t"):format(silverIcon, iconSize, iconSize)
+  local cIcon = ("|T%s:%d:%d:0:0|t"):format(copperIcon, iconSize, iconSize)
+  
   return string.format("%d%s %d%s %d%s", gold, gIcon, silver, sIcon, cop, cIcon)
 end
 
--- =========================================================
--- Optional dependency: Plumber
--- =========================================================
-local function IsPlumberLoaded()
-  if C_AddOns and C_AddOns.IsAddOnLoaded then
-    return C_AddOns.IsAddOnLoaded("Plumber")
+function NS.Utils:FormatMoneyCompact(copper)
+  local gold = copper / 10000
+  return string.format("%.2fg", gold)
+end
+
+-- String helpers
+function NS.Utils:TrimString(str)
+  return str:match("^%s*(.-)%s*$")
+end
+
+function NS.Utils:SplitString(str, delimiter)
+  local parts = {}
+  for part in string.gmatch(str, "([^" .. delimiter .. "]+)") do
+    table.insert(parts, part)
   end
-  return IsAddOnLoaded and IsAddOnLoaded("Plumber")
+  return parts
 end
 
--- =========================================================
--- Drag + Save Position
--- =========================================================
-local function ApplySavedPosition(frame)
-  frame:ClearAllPoints()
-  frame:SetPoint(
-    PickPocketTrackerDB.point or "CENTER",
-    UIParent,
-    PickPocketTrackerDB.relPoint or "CENTER",
-    PickPocketTrackerDB.x or 0,
-    PickPocketTrackerDB.y or 0
-  )
+function NS.Utils:StringStartsWith(str, prefix)
+  return str:sub(1, #prefix) == prefix
 end
 
-local function EnableDragging(frame)
+-- Table helpers
+function NS.Utils:TableCount(tbl)
+  local count = 0
+  for _ in pairs(tbl) do
+    count = count + 1
+  end
+  return count
+end
+
+function NS.Utils:TableIsEmpty(tbl)
+  return next(tbl) == nil
+end
+
+function NS.Utils:TableDeepCopy(original)
+  local copy
+  if type(original) == "table" then
+    copy = {}
+    for key, value in pairs(original) do
+      copy[key] = self:TableDeepCopy(value)
+    end
+  else
+    copy = original
+  end
+  return copy
+end
+
+function NS.Utils:TableSortBy(tbl, keyFunc)
+  local array = {}
+  for key, value in pairs(tbl) do
+    table.insert(array, {key = key, value = value})
+  end
+  
+  table.sort(array, function(a, b)
+    return keyFunc(a.value) > keyFunc(b.value)
+  end)
+  
+  return array
+end
+
+-- Math helpers
+function NS.Utils:Round(number)
+  return math.floor(number + 0.5)
+end
+
+function NS.Utils:Clamp(value, min, max)
+  return math.max(min, math.min(max, value))
+end
+
+function NS.Utils:Percentage(part, total)
+  if total == 0 then return 0 end
+  return (part / total) * 100
+end
+
+-- Time helpers
+function NS.Utils:FormatTime(seconds)
+  local hours = math.floor(seconds / 3600)
+  local minutes = math.floor((seconds % 3600) / 60)
+  local secs = math.floor(seconds % 60)
+  
+  if hours > 0 then
+    return string.format("%dh %dm %ds", hours, minutes, secs)
+  elseif minutes > 0 then
+    return string.format("%dm %ds", minutes, secs)
+  else
+    return string.format("%ds", secs)
+  end
+end
+
+-- Item helpers
+function NS.Utils:GetItemInfo(itemID, callback)
+  local itemName, _, _, _, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemID)
+  
+  if itemName then
+    callback(itemID, itemName, itemTexture)
+  else
+    C_Timer.After(NS.Config.ITEM_CACHE_RETRY_DELAY, function()
+      self:GetItemInfo(itemID, callback)
+    end)
+  end
+end
+
+function NS.Utils:GetVendorPrice(itemID)
+  local vendorPrice = select(11, C_Item.GetItemInfo(itemID))
+  return vendorPrice or 0
+end
+
+-- Bag scanning
+function NS.Utils:CreateBagSnapshot()
+  local snapshot = {}
+  
+  for bag = 0, NUM_BAG_SLOTS do
+    local numSlots = C_Container.GetContainerNumSlots(bag) or 0
+    
+    for slot = 1, numSlots do
+      local itemInfo = C_Container.GetContainerItemInfo(bag, slot)
+      
+      if itemInfo and itemInfo.itemID then
+        local itemID = itemInfo.itemID
+        local count = itemInfo.stackCount or 1
+        snapshot[itemID] = (snapshot[itemID] or 0) + count
+      end
+    end
+  end
+  
+  return snapshot
+end
+
+function NS.Utils:CompareBagSnapshots(oldSnapshot, newSnapshot)
+  local differences = {}
+  
+  for itemID, newCount in pairs(newSnapshot) do
+    local oldCount = oldSnapshot[itemID] or 0
+    local gained = newCount - oldCount
+    
+    if gained > 0 then
+      differences[itemID] = gained
+    end
+  end
+  
+  return differences
+end
+
+-- Frame helpers
+function NS.Utils:MakeFrameMovable(frame, onStopMoving)
   frame:SetMovable(true)
   frame:EnableMouse(true)
   frame:RegisterForDrag("LeftButton")
-
+  
   frame:SetScript("OnDragStart", function(self)
-    -- Locked: allow move only while holding Shift
-    if PickPocketTrackerDB.locked and not IsShiftKeyDown() then return end
     self:StartMoving()
   end)
-
+  
   frame:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
-
-    local point, _, relPoint, x, y = self:GetPoint(1)
-    PickPocketTrackerDB.point = point
-    PickPocketTrackerDB.relPoint = relPoint
-    PickPocketTrackerDB.x = math.floor((x or 0) + 0.5)
-    PickPocketTrackerDB.y = math.floor((y or 0) + 0.5)
-  end)
-end
-
--- =========================================================
--- Resize + Save Size (live update while dragging)
--- =========================================================
-local function EnableResizing(frame, onSizeChanged)
-  frame:SetResizable(true)
-
-  local grip = CreateFrame("Button", nil, frame)
-  grip:SetSize(16, 16)
-  grip:SetPoint("BOTTOMRIGHT", -1, 1)
-  grip:EnableMouse(true)
-
-  -- Keep clickable above textures
-  grip:SetFrameLevel((frame:GetFrameLevel() or 0) + 50)
-  grip:SetHitRectInsets(-6, -6, -6, -6)
-
-  local tex = grip:CreateTexture(nil, "OVERLAY")
-  tex:SetAllPoints(grip)
-  tex:SetTexture("Interface/ChatFrame/UI-ChatIM-SizeGrabber-Up")
-  tex:SetAlpha(0.7)
-
-  local function clampAndSave()
-    local w = math.floor(frame:GetWidth() + 0.5)
-    local h = math.floor(frame:GetHeight() + 0.5)
-
-    -- Small min to avoid "snap back bigger", but still sane.
-    w = math.max(90,  math.min(420, w))
-    h = math.max(20,  math.min(80,  h))
-
-    frame:SetSize(w, h)
-
-    PickPocketTrackerDB.w = w
-    PickPocketTrackerDB.h = h
-
-    if onSizeChanged then onSizeChanged(w, h) end
-  end
-
-  grip:SetScript("OnMouseDown", function()
-    if PickPocketTrackerDB.locked then return end
-    frame:StartSizing("BOTTOMRIGHT")
-
-    -- Only do work while user is actively resizing
-    frame:SetScript("OnSizeChanged", function()
-      if onSizeChanged then
-        onSizeChanged(frame:GetWidth(), frame:GetHeight())
-      end
-    end)
-  end)
-
-  grip:SetScript("OnMouseUp", function()
-    frame:StopMovingOrSizing()
-    frame:SetScript("OnSizeChanged", nil)
-    clampAndSave()
-  end)
-
-  frame.ResizeGrip = grip
-  if PickPocketTrackerDB.locked then grip:Hide() end
-end
-
--- =========================================================
--- Plumber-style backdrop (PNG background + borders)
--- =========================================================
-function NS.ApplyPlumberBackdrop(frame, width, height, alpha)
-  local file = "Interface/AddOns/Plumber/Art/LootUI/LootUI.png"
-
-  -- Create once; resize/reuse forever.
-  if not frame.PB then
-    frame.PB = {}
-
-    local bg = frame:CreateTexture(nil, "BACKGROUND")
-    local top = frame:CreateTexture(nil, "BORDER")
-    local left = frame:CreateTexture(nil, "BORDER")
-    local right = frame:CreateTexture(nil, "BORDER")
-    local bottom = frame:CreateTexture(nil, "BORDER")
-
-    bg:SetTexture(file)
-    top:SetTexture(file)
-    left:SetTexture(file)
-    right:SetTexture(file)
-    bottom:SetTexture(file)
-
-    left:SetTexCoord(504/1024, 0.5, 0, 1)
-    top:SetTexCoord(0, 0.5, 504/512, 1)
-    right:SetTexCoord(0.5, 504/1024, 0, 1)
-    bottom:SetTexCoord(0, 0.5, 1, 504/512)
-
-    frame.PB.bg = bg
-    frame.PB.top = top
-    frame.PB.left = left
-    frame.PB.right = right
-    frame.PB.bottom = bottom
-  end
-
-  local pb = frame.PB
-  local lineWeight = 4
-  local lineOffset = 1
-  local bgExtrude = 5
-
-  pb.bg:ClearAllPoints()
-  pb.bg:SetPoint("TOPLEFT", frame, "TOPLEFT", -bgExtrude, bgExtrude)
-  pb.bg:SetSize(width + bgExtrude * 2, height + bgExtrude * 2)
-  pb.bg:SetAlpha(alpha or 0.50)
-
-  local maxBgSize = 512
-  local bgW = width + bgExtrude
-  local bgH = height + bgExtrude
-  pb.bg:SetTexCoord(0.5, 0.5 + 0.5 * (bgW / maxBgSize), 0, 1 * (bgH / maxBgSize))
-
-  pb.top:ClearAllPoints()
-  pb.top:SetPoint("TOPLEFT", frame, "TOPLEFT", -lineOffset, 0)
-  pb.top:SetSize(width + lineOffset, lineWeight)
-  pb.top:SetAlpha(0.55)
-
-  pb.left:ClearAllPoints()
-  pb.left:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, lineOffset)
-  pb.left:SetSize(lineWeight, height + lineOffset)
-  pb.left:SetAlpha(0.55)
-
-  pb.bottom:ClearAllPoints()
-  pb.bottom:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", -lineOffset, 0)
-  pb.bottom:SetSize(width + lineOffset, lineWeight)
-  pb.bottom:SetAlpha(0.20)
-
-  pb.right:ClearAllPoints()
-  pb.right:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, lineOffset)
-  pb.right:SetSize(lineWeight, height + lineOffset)
-  pb.right:SetAlpha(0.20)
-
-  pb.bg:Show()
-  pb.top:Show()
-  pb.left:Show()
-  pb.bottom:Show()
-  pb.right:Show()
-end
-
--- =========================================================
--- UI: Create the haul window
--- =========================================================
-function NS.CreateGoldWindow()
-  local usePlumberSkin = PickPocketTrackerDB.usePlumberSkin and IsPlumberLoaded()
-
-  local W = PickPocketTrackerDB.w or 165
-  local H = PickPocketTrackerDB.h or 26
-
-  local f = CreateFrame("Frame", "PickPocketTrackerGoldFrame", UIParent, "BackdropTemplate")
-  f:SetSize(W, H)
-
-  ApplySavedPosition(f)
-  EnableDragging(f)
-
-  -- ---- Icon (spell texture is the most reliable)
-  local icon = f:CreateTexture(nil, "OVERLAY")
-  icon:SetSize(16, 16)
-  icon:SetPoint("LEFT", 6, 0)
-  icon:SetDrawLayer("OVERLAY", 2)
-
-  local spellId = (NS.PP and NS.PP.PICK_POCKET_SPELL_ID) or 921
-  local iconTex =
-    (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellId))
-    or (GetSpellTexture and GetSpellTexture(spellId))
-    or "Interface/Icons/Ability_Rogue_PickPocket"
-
-  icon:SetTexture(iconTex)
-  icon:SetAlpha(1)
-
-  -- ---- Text
-  local fontObj = (usePlumberSkin and _G.PlumberLootUIFont) and "PlumberLootUIFont" or "GameFontHighlight"
-  local txt = f:CreateFontString(nil, "OVERLAY", fontObj)
-  txt:SetJustifyH("LEFT")
-  txt:SetWordWrap(false)
-  txt:SetTextColor(1, 1, 1, 1)
-
-  local function anchorTextWithIcon()
-    txt:ClearAllPoints()
-    if PickPocketTrackerDB.showIcon then
-
--- Minimap button settings
-if PickPocketTrackerDB.minimap == nil then PickPocketTrackerDB.minimap = {} end
-if PickPocketTrackerDB.minimap.hide == nil then PickPocketTrackerDB.minimap.hide = false end
-if PickPocketTrackerDB.minimap.angle == nil then PickPocketTrackerDB.minimap.angle = 220 end
-if PickPocketTrackerDB.minimap.radius == nil then PickPocketTrackerDB.minimap.radius = 80 end
-      icon:Show()
-      txt:SetPoint("LEFT", icon, "RIGHT", 4, 0)
-    else
-      icon:Hide()
-      txt:SetPoint("LEFT", f, "LEFT", 6, 0)
+    if onStopMoving then
+      onStopMoving(self)
     end
-    txt:SetPoint("RIGHT", f, "RIGHT", -3, 0)
-  end
-
-  anchorTextWithIcon()
-
-  -- ---- Skin (called on create + resize)
-  local function applySkin()
-    if usePlumberSkin then
-      NS.ApplyPlumberBackdrop(f, W, H, 0.50)
-    else
-      f:SetBackdrop({
-        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 14,
-        insets = { left = 4, right = 4, top = 4, bottom = 4 }
-      })
-      f:SetBackdropColor(0.06, 0.06, 0.06, 0.50)
-    end
-  end
-
-  applySkin()
-
-  -- ---- Font fitting (scale-based so it keeps shrinking/growing smoothly)
-  local baseSize = 12
-  local minScale = 0.05
-  local maxScale = 2.00
-
-  local function fitText()
-    local font, _, flags = txt:GetFont()
-    if not font then return end
-
-    txt:SetFont(font, baseSize, flags)
-    txt:SetScale(1)
-
-    -- Padding: left pad + optional icon + gap + right pad
-    local leftPad = 6
-    local rightPad = 3
-    local iconW = (PickPocketTrackerDB.showIcon and 16 or 0)
-    local gap = (PickPocketTrackerDB.showIcon and 4 or 0)
-
-    local padding = leftPad + iconW + gap + rightPad
-    local maxWidth = W - padding
-
-    local textWidth = txt:GetStringWidth() or 0
-    if textWidth <= 0 then return end
-
-    if maxWidth <= 1 then
-      txt:SetScale(minScale)
-      return
-    end
-
-    local scale = maxWidth / textWidth
-    if scale < minScale then scale = minScale end
-    if scale > maxScale then scale = maxScale end
-    txt:SetScale(scale)
-  end
-
-  -- Public: update displayed value
-  function f:SetCopper(copper)
-    txt:SetText("Haul: " .. NS.formatGSC(copper))
-    fitText()
-  end
-
-  -- Public: apply icon setting immediately
-  function f:ApplyIconSetting()
-    anchorTextWithIcon()
-    fitText()
-  end
-
-  -- Resizing updates W/H + re-applies skin + re-fits text
-  EnableResizing(f, function(newW, newH)
-    W, H = newW, newH
-    applySkin()
-    fitText()
   end)
-
-  f:SetCopper(0)
-  return f
-end
-
--- =========================================================
--- Pick Pocket tracker (session logic)
--- =========================================================
-NS.PP = NS.PP or {}
-NS.PP.PICK_POCKET_SPELL_ID = 921
-NS.PP.windowSeconds = 2.0
-
-NS.PP.sessionCopper = 0
-NS.PP._lastPPTime = 0
-NS.PP._lastMoney = 0
-
-function NS.PP:OnLogin()
-  self._lastMoney = GetMoney()
-end
-
-function NS.PP:ResetSession()
-  self.sessionCopper = 0
-end
-
-function NS.PP:SetWindowSeconds(sec)
-  self.windowSeconds = sec
-end
-
-function NS.PP:OnPickPocketCast()
-  self._lastPPTime = GetTime()
-end
-
-function NS.PP:OnMoneyChanged()
-  local money = GetMoney()
-  local delta = money - self._lastMoney
-  self._lastMoney = money
-
-  -- Fast exits: most money events aren't pickpocket
-  if delta <= 0 then return 0 end
-  if (GetTime() - self._lastPPTime) > self.windowSeconds then return 0 end
-
-  self.sessionCopper = self.sessionCopper + delta
-  return delta
 end

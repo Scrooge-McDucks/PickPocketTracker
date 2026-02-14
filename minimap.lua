@@ -1,8 +1,4 @@
--- minimap.lua
--- Minimap button for Pick Pocket Tracker.
--- Left-click toggles the gold window. Right-click prints help.
--- Drag to reposition around the minimap.
-
+-- Minimap button
 local _, NS = ...
 
 NS.Minimap = NS.Minimap or {}
@@ -12,7 +8,7 @@ local function ensureDB()
   if PickPocketTrackerDB.minimap == nil then PickPocketTrackerDB.minimap = {} end
   local mm = PickPocketTrackerDB.minimap
   if mm.hide == nil then mm.hide = false end
-  if mm.angle == nil then mm.angle = 220 end -- degrees
+  if mm.angle == nil then mm.angle = 220 end
   if mm.radius == nil then mm.radius = 80 end
   return mm
 end
@@ -21,23 +17,20 @@ local function posFromAngle(btn, angleDeg, radius)
   local a = math.rad(angleDeg or 0)
   local x = math.cos(a) * (radius or 80)
   local y = math.sin(a) * (radius or 80)
+  btn:ClearAllPoints()
   btn:SetPoint("CENTER", Minimap, "CENTER", x, y)
 end
 
-local function angleFromCursor(radius)
+local function angleFromCursor()
   local mx, my = Minimap:GetCenter()
   local cx, cy = GetCursorPosition()
   local scale = Minimap:GetEffectiveScale()
   cx, cy = cx / scale, cy / scale
-  local dx, dy = cx - mx, cy - my
-  local a = math.deg(math.atan2(dy, dx))
-  if a < 0 then a = a + 360 end
-  return a
+  return math.deg(math.atan2(cy - my, cx - mx)) % 360
 end
 
 function NS.Minimap:Create(onToggle)
   if self.button then
-    -- update callback and visibility
     self.onToggle = onToggle or self.onToggle
     self:Apply()
     return self.button
@@ -46,58 +39,61 @@ function NS.Minimap:Create(onToggle)
   local mm = ensureDB()
 
   local btn = CreateFrame("Button", "PickPocketTrackerMinimapButton", Minimap)
-  btn:SetSize(32, 32)
+  btn:SetSize(31, 31)
   btn:SetFrameStrata("MEDIUM")
+  btn:SetFrameLevel(8)
   btn:SetClampedToScreen(true)
-
   btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   btn:RegisterForDrag("LeftButton")
   btn:SetMovable(true)
   btn:EnableMouse(true)
 
-  -- ring/background
-  local bg = btn:CreateTexture(nil, "BACKGROUND")
-  bg:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-  bg:SetSize(56, 56)
-  bg:SetPoint("CENTER", 11, -12)
-
-  -- icon
-  local icon = btn:CreateTexture(nil, "ARTWORK")
+  -- Icon (sits inside the ring)
+  local icon = btn:CreateTexture(nil, "BACKGROUND")
+  icon:SetSize(20, 20)
   icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
-  icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-  icon:SetSize(18, 18)
-  icon:SetPoint("CENTER", 0, 1)
-
+  icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+  icon:SetPoint("TOPLEFT", 7, -5)
   btn.icon = icon
 
-  -- tooltip
+  -- Border ring (MiniMap-TrackingBorder is designed to anchor at TOPLEFT of a ~31px button)
+  local border = btn:CreateTexture(nil, "OVERLAY")
+  border:SetSize(56, 56)
+  border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+  border:SetPoint("TOPLEFT", 0, 0)
+
+  -- Highlight
+  local highlight = btn:CreateTexture(nil, "HIGHLIGHT")
+  highlight:SetSize(24, 24)
+  highlight:SetPoint("TOPLEFT", 5, -3)
+  highlight:SetTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
+
+  -- Tooltip
   btn:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:AddLine("Pick Pocket Tracker")
-    GameTooltip:AddLine("Left-click: Toggle window", 1, 1, 1)
-    GameTooltip:AddLine("Drag: Move icon", 1, 1, 1)
+    GameTooltip:AddLine("Left-click: Options", 1, 1, 1)
+    GameTooltip:AddLine("Right-click: Toggle window", 1, 1, 1)
+    GameTooltip:AddLine("Drag: Move icon", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)
-  btn:SetScript("OnLeave", function()
-    GameTooltip:Hide()
-  end)
+  btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-  -- click
+  -- Click
   btn:SetScript("OnClick", function(_, button)
     if button == "LeftButton" then
-      if NS.Minimap.onToggle then NS.Minimap.onToggle() end
+      if NS.Options then NS.Options:Toggle() end
     else
-      NS.info("Commands: /pp hide|show, /pp lock|unlock, /pp reset, /pp icon on|off, /pp minimap on|off")
+      if NS.Minimap.onToggle then NS.Minimap.onToggle() end
     end
   end)
 
-  -- drag
+  -- Drag
   btn:SetScript("OnDragStart", function(self)
     if mm.hide then return end
     self.isDragging = true
     self:SetScript("OnUpdate", function()
-      local a = angleFromCursor(mm.radius)
-      mm.angle = a
+      mm.angle = angleFromCursor()
       posFromAngle(self, mm.angle, mm.radius)
     end)
   end)
@@ -124,3 +120,6 @@ function NS.Minimap:Apply()
     posFromAngle(self.button, mm.angle, mm.radius)
   end
 end
+
+NS.Minimap.UpdateVisibility = NS.Minimap.Apply
+NS.Minimap.UpdatePosition = NS.Minimap.Apply
