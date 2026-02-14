@@ -60,8 +60,7 @@ The addon tracks:
 ## Compatibility
 
 - WoW Retail (The War Within)
-- Interface version: 120000
-- Optional: Plumber addon for enhanced visuals
+- Interface version: 120000, 120001
 
 ## Features
 
