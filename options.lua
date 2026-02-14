@@ -72,7 +72,7 @@ end
 
 function NS.Options:CreateOptionsFrame()
   local f = CreateFrame("Frame", "PickPocketTrackerOptionsFrame", UIParent, "BackdropTemplate")
-  f:SetSize(420, 480)
+  f:SetSize(420, 500)
   f:SetPoint("CENTER")
   f:SetFrameStrata("DIALOG")
   f:Hide()
@@ -125,6 +125,8 @@ function NS.Options:CreateContent()
       NS.Data:ShouldShowIcon(), function(v) NS.Data:SetShowIcon(v); NS.UI:OnIconSettingChanged() end },
     { "Show Minimap Button", "Display the minimap button for quick access",
       not NS.Data:IsMinimapHidden(), function(v) NS.Data:SetMinimapHidden(not v); if NS.Minimap then NS.Minimap:Apply() end end },
+    { "Log Items to Chat", "Show pickpocketed/sold item messages in chat",
+      NS.Data:ShouldChatLogItems(), function(v) NS.Data:SetChatLogItems(v) end },
   }
   for _, info in ipairs(checks) do
     local cb = CreateCheckbox(parent, info[1], info[2], info[3], info[4])

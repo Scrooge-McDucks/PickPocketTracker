@@ -48,7 +48,7 @@ function NS.Minimap:Create(onToggle)
   btn:SetMovable(true)
   btn:EnableMouse(true)
 
-  -- Icon (sits inside the ring)
+  -- Icon
   local icon = btn:CreateTexture(nil, "BACKGROUND")
   icon:SetSize(20, 20)
   icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
@@ -56,20 +56,15 @@ function NS.Minimap:Create(onToggle)
   icon:SetPoint("TOPLEFT", 7, -5)
   btn.icon = icon
 
-  -- Border ring (MiniMap-TrackingBorder is designed to anchor at TOPLEFT of a ~31px button)
+  -- Border ring (anchor TOPLEFT per WoW convention for this texture)
   local border = btn:CreateTexture(nil, "OVERLAY")
-  border:SetSize(56, 56)
+  border:SetSize(54, 54)
   border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
   border:SetPoint("TOPLEFT", 0, 0)
 
-  -- Highlight
-  local highlight = btn:CreateTexture(nil, "HIGHLIGHT")
-  highlight:SetSize(24, 24)
-  highlight:SetPoint("TOPLEFT", 5, -3)
-  highlight:SetTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
-
-  -- Tooltip
+  -- Tooltip + hover glow via icon brightness
   btn:SetScript("OnEnter", function(self)
+    self.icon:SetAlpha(1.0)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:AddLine("Pick Pocket Tracker")
     GameTooltip:AddLine("Left-click: Options", 1, 1, 1)
@@ -77,7 +72,12 @@ function NS.Minimap:Create(onToggle)
     GameTooltip:AddLine("Drag: Move icon", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)
-  btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  btn:SetScript("OnLeave", function(self)
+    self.icon:SetAlpha(0.8)
+    GameTooltip:Hide()
+  end)
+
+  icon:SetAlpha(0.8)
 
   -- Click
   btn:SetScript("OnClick", function(_, button)

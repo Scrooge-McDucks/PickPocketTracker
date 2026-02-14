@@ -225,28 +225,3 @@ function NS.Stats:GetAccountStatsFormatted()
   
   return table.concat(lines, "\n")
 end
-
-function NS.Stats:GetCharacterLeaderboard()
-  local chars = {}
-  
-  for key, data in pairs(PickPocketTrackerAccountDB.characters) do
-    local total = data.goldLooted + data.itemsSold
-    if total > 0 then
-      table.insert(chars, {
-        key = key,
-        name = data.name,
-        class = data.class,
-        total = total,
-        gold = data.goldLooted,
-        items = data.itemsSold,
-        count = data.pickpocketCount,
-      })
-    end
-  end
-  
-  table.sort(chars, function(a, b)
-    return a.total > b.total
-  end)
-  
-  return chars
-end

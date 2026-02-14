@@ -14,7 +14,6 @@ NS.Config.PICK_POCKET_SPELL_ID = 921
 NS.Config.DEFAULT_WINDOW_SECONDS = 2.0
 NS.Config.MIN_WINDOW_SECONDS = 0.1
 NS.Config.MAX_WINDOW_SECONDS = 10.0
-NS.Config.ITEM_CHECK_DELAY = 0.5
 NS.Config.ITEM_CACHE_RETRY_DELAY = 0.1
 
 -- UI defaults
@@ -32,6 +31,7 @@ NS.Config.UI_DEFAULTS = {
   hidden = false,
   locked = false,
   showIcon = true,
+  chatLogItems = true,
   baseFontSize = 12,
   minFontScale = 0.05,
   maxFontScale = 2.00,

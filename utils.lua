@@ -57,25 +57,22 @@ function NS.Utils:FormatMoney(copper)
 end
 
 function NS.Utils:FormatMoneyCompact(copper)
-  local gold = copper / 10000
-  return string.format("%.2fg", gold)
+  local gold = math.floor(copper / 10000)
+  local silver = math.floor((copper % 10000) / 100)
+  local cop = copper % 100
+  
+  if gold > 0 then
+    return string.format("%dg %ds", gold, silver)
+  elseif silver > 0 then
+    return string.format("%ds %dc", silver, cop)
+  else
+    return string.format("%dc", cop)
+  end
 end
 
 -- String helpers
 function NS.Utils:TrimString(str)
   return str:match("^%s*(.-)%s*$")
-end
-
-function NS.Utils:SplitString(str, delimiter)
-  local parts = {}
-  for part in string.gmatch(str, "([^" .. delimiter .. "]+)") do
-    table.insert(parts, part)
-  end
-  return parts
-end
-
-function NS.Utils:StringStartsWith(str, prefix)
-  return str:sub(1, #prefix) == prefix
 end
 
 -- Table helpers
@@ -85,23 +82,6 @@ function NS.Utils:TableCount(tbl)
     count = count + 1
   end
   return count
-end
-
-function NS.Utils:TableIsEmpty(tbl)
-  return next(tbl) == nil
-end
-
-function NS.Utils:TableDeepCopy(original)
-  local copy
-  if type(original) == "table" then
-    copy = {}
-    for key, value in pairs(original) do
-      copy[key] = self:TableDeepCopy(value)
-    end
-  else
-    copy = original
-  end
-  return copy
 end
 
 function NS.Utils:TableSortBy(tbl, keyFunc)
@@ -131,36 +111,31 @@ function NS.Utils:Percentage(part, total)
   return (part / total) * 100
 end
 
--- Time helpers
-function NS.Utils:FormatTime(seconds)
-  local hours = math.floor(seconds / 3600)
-  local minutes = math.floor((seconds % 3600) / 60)
-  local secs = math.floor(seconds % 60)
-  
-  if hours > 0 then
-    return string.format("%dh %dm %ds", hours, minutes, secs)
-  elseif minutes > 0 then
-    return string.format("%dm %ds", minutes, secs)
-  else
-    return string.format("%ds", secs)
+-- Item helpers
+local function SafeGetItemInfo(itemID)
+  if C_Item and C_Item.GetItemInfo then
+    return C_Item.GetItemInfo(itemID)
+  elseif GetItemInfo then
+    return GetItemInfo(itemID)
   end
+  return nil
 end
 
--- Item helpers
-function NS.Utils:GetItemInfo(itemID, callback)
-  local itemName, _, _, _, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemID)
+function NS.Utils:GetItemInfo(itemID, callback, retries)
+  retries = retries or 0
+  local itemName, _, _, _, _, _, _, _, _, itemTexture = SafeGetItemInfo(itemID)
   
   if itemName then
     callback(itemID, itemName, itemTexture)
-  else
+  elseif retries < 10 then
     C_Timer.After(NS.Config.ITEM_CACHE_RETRY_DELAY, function()
-      self:GetItemInfo(itemID, callback)
+      self:GetItemInfo(itemID, callback, retries + 1)
     end)
   end
 end
 
 function NS.Utils:GetVendorPrice(itemID)
-  local vendorPrice = select(11, C_Item.GetItemInfo(itemID))
+  local vendorPrice = select(11, SafeGetItemInfo(itemID))
   return vendorPrice or 0
 end
 
@@ -198,22 +173,4 @@ function NS.Utils:CompareBagSnapshots(oldSnapshot, newSnapshot)
   end
   
   return differences
-end
-
--- Frame helpers
-function NS.Utils:MakeFrameMovable(frame, onStopMoving)
-  frame:SetMovable(true)
-  frame:EnableMouse(true)
-  frame:RegisterForDrag("LeftButton")
-  
-  frame:SetScript("OnDragStart", function(self)
-    self:StartMoving()
-  end)
-  
-  frame:SetScript("OnDragStop", function(self)
-    self:StopMovingOrSizing()
-    if onStopMoving then
-      onStopMoving(self)
-    end
-  end)
 end

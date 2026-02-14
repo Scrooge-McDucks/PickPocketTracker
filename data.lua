@@ -20,6 +20,7 @@ function NS.Data:InitializeUI()
   if db.hidden == nil then db.hidden = defaults.hidden end
   if db.locked == nil then db.locked = defaults.locked end
   if db.showIcon == nil then db.showIcon = defaults.showIcon end
+  if db.chatLogItems == nil then db.chatLogItems = defaults.chatLogItems end
   
   if db.point == nil then db.point = defaults.point end
   if db.relativePoint == nil then db.relativePoint = defaults.relativePoint end
@@ -79,6 +80,14 @@ end
 
 function NS.Data:SetShowIcon(show)
   self.db.showIcon = show
+end
+
+function NS.Data:ShouldChatLogItems()
+  return self.db.chatLogItems
+end
+
+function NS.Data:SetChatLogItems(enabled)
+  self.db.chatLogItems = enabled
 end
 
 function NS.Data:SetWindowPosition(point, relPoint, x, y)

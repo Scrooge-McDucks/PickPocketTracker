@@ -30,6 +30,7 @@ function NS.UI:CreateMainWindow()
   
   self:EnableDragging(frame)
   self:EnableResizing(frame)
+  self:SetupTooltip(frame)
   
   return frame
 end
@@ -241,13 +242,62 @@ end
 function NS.UI:UpdateDisplay()
   if not self.textFontString then return end
   
-  local totalValue = 0
+  local goldValue = 0
+  local soldValue = 0
+  local unsoldValue = 0
+  
   if NS.Tracking then
-    totalValue = NS.Tracking:GetTotalValue()
+    goldValue = NS.Tracking:GetSessionGold()
+  end
+  if NS.Items then
+    soldValue = NS.Items:GetSessionVendorValue()
+    unsoldValue = NS.Items:GetUnsoldValue()
   end
   
-  self.textFontString:SetText("Haul: " .. NS.Utils:FormatMoney(totalValue))
+  local confirmedTotal = goldValue + soldValue
+  
+  if unsoldValue > 0 then
+    self.textFontString:SetText("Haul: " .. NS.Utils:FormatMoney(confirmedTotal) .. " |cff66ffaa*|r")
+  else
+    self.textFontString:SetText("Haul: " .. NS.Utils:FormatMoney(confirmedTotal))
+  end
+  
+  -- Store for tooltip
+  self.cachedGold = goldValue
+  self.cachedSold = soldValue
+  self.cachedUnsold = unsoldValue
+  
   self:ScaleTextToFit()
+end
+
+-- Tooltip on hover
+function NS.UI:SetupTooltip(frame)
+  frame:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine("Pick Pocket Tracker")
+    
+    local gold = NS.UI.cachedGold or 0
+    local sold = NS.UI.cachedSold or 0
+    local unsold = NS.UI.cachedUnsold or 0
+    
+    if gold > 0 then
+      GameTooltip:AddDoubleLine("Gold looted:", NS.Utils:FormatMoneyCompact(gold), 1,1,1, 1,1,1)
+    end
+    if sold > 0 then
+      GameTooltip:AddDoubleLine("Items sold:", NS.Utils:FormatMoneyCompact(sold), 1,1,1, 1,1,1)
+    end
+    if unsold > 0 then
+      GameTooltip:AddDoubleLine("Pending vendor:", NS.Utils:FormatMoneyCompact(unsold), 0.4,1,0.67, 0.4,1,0.67)
+    end
+    if gold == 0 and sold == 0 and unsold == 0 then
+      GameTooltip:AddLine("No loot yet", 0.7, 0.7, 0.7)
+    end
+    
+    GameTooltip:Show()
+  end)
+  frame:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+  end)
 end
 
 -- Visibility
