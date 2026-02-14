@@ -1,86 +1,81 @@
 # Pick Pocket Tracker
 
-A WoW addon for tracking pickpocket gold, items, and lifetime statistics.
+Tracks your pickpocket earnings in WoW — gold looted, items grabbed, vendor sales — across sessions and characters.
 
-## Features
+Built for Retail (The War Within, 12.0.x).
 
-- **Session Tracking** - Track gold and items per session
-- **Lifetime Statistics** - Per-character and account-wide totals
-- **Item Tracking** - Automatically track pickpocketed items and vendor sales
-- **Character Leaderboard** - See which character earns the most
-- **Modern UI** - Toggle switches and clean interface
-- **Resizable Display** - Drag, resize, and position the window anywhere
-- **Minimap Button** - Quick access to settings
+## What it does
 
-## Installation
+When you pickpocket a mob, the addon logs the gold and any items you receive. Items show up as "pending" in the haul window until you vendor them. Everything feeds into lifetime stats that persist across sessions, characters, and accounts.
 
-1. Download the addon
-2. Extract to `World of Warcraft\_retail_\Interface\AddOns\`
-3. Restart WoW or type `/reload`
+The haul window is a small draggable/resizable bar. Hover it for a breakdown. A green `*` appears when you have unsold items in your bags.
 
-## Commands
+## Install
 
-- `/pp` - Open options window
-- `/pp options` - Open options window
-- `/pp stats` - Show session item statistics
-- `/pp lifetime` - Show lifetime statistics
-- `/pp reset` - Reset current session
-- `/pp hide` - Hide the display window
-- `/pp show` - Show the display window
-- `/pp help` - Show all commands
+Drop the `PickPocketTracker` folder into:
+```
+World of Warcraft/_retail_/Interface/AddOns/
+```
+Reload or restart the client.
 
-## Options Window
+## Usage
 
-Type `/pp` to open the modern options interface with:
+`/pp` opens the options panel. That's the main one you need.
 
-- **Display Settings** - Hide/show window, lock position, toggle icon
-- **Tracking Settings** - Adjust pickpocket detection window
-- **Appearance** - Plumber skin support
-- **Statistics** - View character and account-wide stats
-- **Character Leaderboard** - Rankings by total earned
-- **Reset Options** - Reset session, character, or account data
+Other commands if you prefer chat:
+- `/pp stats` — session item breakdown
+- `/pp lifetime` — all-time stats for this character + account
+- `/pp reset` — clear current session
+- `/pp hide` / `/pp show` — toggle the haul window
+- `/pp lock` / `/pp unlock` — lock window position (shift-drag still moves it when locked)
+- `/pp help` — full command list
 
-## Lifetime Statistics
+## Options
 
-The addon tracks:
-- Gold looted from pickpockets
-- Items sold to vendors
-- Total pickpocket attempts
-- Per-character totals
-- Account-wide totals across all characters
-- First and last pickpocket timestamps
-- Average gold per pickpocket
+- **Hide/Show/Lock** the haul window
+- **Show/hide** the pickpocket icon, minimap button
+- **Log Items to Chat** — toggle the "Pickpocketed: 2x Worn Junkbox" messages (on by default)
+- **Detection Window** — how long after a pickpocket cast to attribute gold/items (default 2s, increase if you're missing loot on high latency)
 
-## Reset Options
+## How tracking works
 
-**Session Reset** - Clears current session only (safe, use anytime)  
-**Character Reset** - Clears this character's lifetime stats (account total adjusts automatically)  
-**Account Reset** - Clears ALL characters' lifetime stats (requires confirmation)
+Gold detection uses `PLAYER_MONEY` — when your gold changes within a few seconds of a pickpocket cast, it gets counted.
 
-## Compatibility
+Item detection uses `CHAT_MSG_LOOT` — same time-window approach. When WoW tells you "You receive loot: [item]" shortly after a pickpocket, the addon attributes it.
 
-- WoW Retail (The War Within)
-- Interface version: 120000, 120001
+Vendor detection snapshots your bags when you open a merchant. When you close the merchant, it checks what's missing and credits the sale value for any tracked items you sold.
 
-## Features
+## Stats
 
-- Modular architecture for easy maintenance
-- Minimal performance impact
-- No continuous background scanning
-- Efficient event handling
-- Clean, professional codebase
+The addon keeps two layers of stats:
 
-## Support
+**Session** — resets when you `/pp reset` or log out. Shows in the haul window and `/pp stats`.
 
-For issues or suggestions, please report via:
-- GitHub Issues
-- CurseForge comments
-- WoWInterface comments
+**Lifetime** — persists forever in SavedVariables. Per-character and account-wide totals. Tracks gold looted, items sold, pickpocket count, averages, first/last timestamps. Visible in the options panel and via `/pp lifetime`.
 
-## Version
+## Known quirks
 
-Current version: 1.0.0
+- If you pickpocket and immediately loot a quest mob in the same second, the quest items might get attributed to pickpocket. The detection window setting lets you tune this.
+- Item vendor prices come from `GetItemInfo` which occasionally returns 0 for items that do have vendor value (server hasn't cached the item yet). Reopening your bags usually fixes it.
+- The addon doesn't track items across sessions — if you log out with unsold pickpocketed items, they won't appear as "pending" next login. Gold totals are fine though.
+
+## Files
+
+```
+config.lua     — constants, defaults, colors
+data.lua       — SavedVariables access layer
+utils.lua      — formatting, bag scanning, helpers
+tracking.lua   — gold detection (PLAYER_MONEY + time window)
+items.lua      — item detection (CHAT_MSG_LOOT) + vendor sales
+stats.lua      — lifetime stats (per-char + account-wide)
+ui.lua         — haul display window
+options.lua    — settings panel
+minimap.lua    — minimap button
+events.lua     — event routing
+commands.lua   — slash commands
+init.lua       — bootstrap
+```
 
 ## License
 
-All rights reserved.
+All rights reserved. Feel free to fork for personal use.
