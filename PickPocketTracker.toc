@@ -1,5 +1,5 @@
-## Interface: 120000
-## Version: 1.2.0
+## Interface: 120000 120001
+## Version: 1.4.0
 ## Title: Pick Pocket Tracker
 ## Author: Scrooge-McDucks
 ## Notes: Track pickpocket gold and items with lifetime statistics, bar graphs, and account-wide totals.
