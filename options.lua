@@ -791,3 +791,59 @@ function NS.Options:Toggle()
     self.frame:Show()
   end
 end
+
+--------------------------------------------------------------------------------
+-- Blizzard Add-On Options Registration
+-- Registers a simple panel in the Blizzard Settings UI (Game Menu → AddOns)
+-- containing a single button that opens the main PickPocketTracker window.
+-- Registered for all characters so the entry is always visible in the list.
+--------------------------------------------------------------------------------
+
+function NS.Options:RegisterBlizzardOptions()
+  local panel = CreateFrame("Frame")
+  panel.name = "Pick Pocket Tracker"
+
+  -- Title
+  local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  title:SetPoint("TOPLEFT", 16, -16)
+  title:SetText("Pick Pocket Tracker")
+  title:SetTextColor(1, 0.82, 0)
+
+  local subtitle = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
+  subtitle:SetText("v" .. NS.Config.VERSION .. "  •  Track your pickpocket gold and items")
+  subtitle:SetTextColor(0.7, 0.7, 0.7)
+
+  -- Divider
+  local divider = panel:CreateTexture(nil, "ARTWORK")
+  divider:SetHeight(1)
+  divider:SetPoint("TOPLEFT",  subtitle, "BOTTOMLEFT",  0, -12)
+  divider:SetPoint("TOPRIGHT", panel,    "TOPRIGHT",   -16, 0)
+  divider:SetColorTexture(0.5, 0.5, 0.5, 0.4)
+
+  -- Open button
+  local btn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+  btn:SetSize(220, 30)
+  btn:SetPoint("TOPLEFT", divider, "BOTTOMLEFT", 0, -20)
+  btn:SetText("Open Pick Pocket Tracker")
+  btn:SetScript("OnClick", function()
+    -- Dismiss the Settings panel first so the main window isn't hidden behind it
+    if SettingsPanel and SettingsPanel:IsShown() then
+      HideUIPanel(SettingsPanel)
+    end
+    NS.Options:Show()
+  end)
+
+  -- Hint line
+  local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  hint:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 4, -8)
+  hint:SetText("You can also type |cffffd700/pp|r or click the minimap button.")
+  hint:SetTextColor(0.6, 0.6, 0.6)
+
+  -- Register with the modern Settings API (10.0 / War Within+)
+  local category = Settings.RegisterCanvasLayoutCategory(panel, "Pick Pocket Tracker")
+  category.ID = "PickPocketTracker"
+  Settings.RegisterAddOnCategory(category)
+
+  self.blizzardCategory = category
+end

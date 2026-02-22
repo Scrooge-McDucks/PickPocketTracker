@@ -56,6 +56,9 @@ handlers.PLAYER_LOGIN = function()
   -- Account DB always initializes (for account-wide stats on any character)
   if NS.Stats then NS.Stats:Initialize() end
 
+  -- Register the add-on panel in Blizzard's Settings UI for all characters
+  if NS.Options then NS.Options:RegisterBlizzardOptions() end
+
   -- Non-rogues: minimal load, no UI, no tracking
   if not NS.Data:IsRogue() then
     NS.Utils:PrintInfo(string.format("v%s loaded (non-rogue — tracking disabled, /pp account for stats).",
