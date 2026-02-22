@@ -1,11 +1,11 @@
-## Interface: 120000
+## Interface: 120000 120001
 ## Version: 1.5.0
 ## Title: Pick Pocket Tracker
 ## Author: Scrooge-McDucks
 ## Notes: Track pickpocket gold and items with lifetime statistics, bar graphs, and account-wide totals.
 ## SavedVariablesPerCharacter: PickPocketTrackerDB
 ## SavedVariables: PickPocketTrackerAccountDB
-## X-Curse-Project-ID: CHANGEME
+## X-Curse-Project-ID: 1462051
 ## X-License: MIT
 
 config.lua
