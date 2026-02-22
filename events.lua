@@ -11,6 +11,9 @@ local _, NS = ...
 
 NS.Events = {}
 
+local CreateFrame  = CreateFrame
+local UnitGUID     = UnitGUID
+
 local eventFrame = CreateFrame("Frame")
 
 function NS.Events:Register()
@@ -40,6 +43,7 @@ local function RegisterTrackingEvents()
   eventFrame:RegisterEvent("CHAT_MSG_LOOT")
   eventFrame:RegisterEvent("MERCHANT_SHOW")
   eventFrame:RegisterEvent("MERCHANT_CLOSED")
+  eventFrame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
 end
 
 -------------------------------------------------------------------------------
@@ -63,7 +67,13 @@ handlers.PLAYER_LOGIN = function()
   RegisterTrackingEvents()
 
   NS.Tracking:Initialize()
+  -- Items:Initialize clears session items (consistent with sessionGold reset)
   NS.Items:Initialize()
+
+  if NS.Coins then
+    NS.Coins:Initialize()
+    NS.Coins:UpdateVisibility()
+  end
 
   if NS.Options then NS.Options:RegisterDialogs() end
 
@@ -86,6 +96,7 @@ end
 handlers.UNIT_SPELLCAST_SUCCEEDED = function(_, unit, _, spellID)
   if unit ~= "player" or spellID ~= NS.Config.PICK_POCKET_SPELL_ID then return end
   NS.Tracking:OnPickPocketCast()
+  if NS.Coins then NS.Coins:OnPickPocketCast() end
 end
 
 -------------------------------------------------------------------------------
@@ -117,11 +128,26 @@ handlers.CHAT_MSG_LOOT = function(_, msg, _, _, _, _, _, _, _, _, _, _, senderGU
 end
 
 -------------------------------------------------------------------------------
--- Vendor open/close
+-- Vendor open/close — snapshot + autosell
 -------------------------------------------------------------------------------
 
-handlers.MERCHANT_SHOW   = function() NS.Items:OnMerchantShow() end
+handlers.MERCHANT_SHOW = function()
+  NS.Items:OnMerchantShow()
+  -- Start autosell queue if enabled (sells items one at a time)
+  NS.Items:StartAutoSell()
+end
+
 handlers.MERCHANT_CLOSED = function()
   NS.Items:OnMerchantClosed()
   NS.UI:UpdateDisplay()
+end
+
+-------------------------------------------------------------------------------
+-- Currency change — Coins of Air tracking
+-------------------------------------------------------------------------------
+
+handlers.CURRENCY_DISPLAY_UPDATE = function()
+  if NS.Coins and NS.Data:ShouldTrackCoins() then
+    NS.Coins:OnCurrencyChanged()
+  end
 end

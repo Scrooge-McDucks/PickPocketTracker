@@ -1,16 +1,18 @@
 # Pick Pocket Tracker
 
-Track how much gold you're making from pickpocketing. Logs every coin looted and item grabbed, totals it up per session, and keeps lifetime stats across all your rogues.
+Track how much gold you're making from pickpocketing. Logs every coin looted, item grabbed, and Coin of Air earned — totals it up per session and keeps lifetime stats across all your rogues.
 
 Built for Retail (The War Within, 12.0.x). Rogue only — if you log in on a non-rogue, the addon stays out of your way. You can still check your combined haul with `/pp account` from any character.
 
 ## What it does
 
-Pickpocket a mob, and the addon catches the gold and any items that drop. Gold shows up immediately in the haul window. Items show as "pending" until you vendor them — at that point the sale price gets added to your total.
+Pickpocket a mob and the addon catches the gold and any items that drop. Gold shows up immediately in the haul window. Items show as "pending" until you vendor them — at that point the sale price gets added to your total.
 
 The haul window is a small bar you can drag anywhere and resize. Hover it for a breakdown. A green `*` appears when you've got unsold pickpocketed items sitting in your bags.
 
-The options panel has a character earnings bar graph if you want to see how your rogues stack up against each other. Toggle it on or off — it's a checkbox in the Display section.
+There's also optional Coins of Air tracking — enable it in the Display settings and a second small window pops up with your session count and lifetime stats. Both windows have the same capabilities: drag, resize, lock, icon toggle.
+
+The options panel has a character earnings bar graph if you want to see how your rogues stack up against each other. Toggle it on or off — it's a checkbox.
 
 ## Install
 
@@ -32,21 +34,27 @@ Log in on a rogue and you're good.
 | `/pp account` | Account-wide totals (works on any class) |
 | `/pp reset` | Clear current session |
 | `/pp hide` / `show` | Toggle haul window |
-| `/pp lock` / `unlock` | Lock window position (shift-drag still moves when locked) |
+| `/pp lock` / `unlock` | Lock both windows (shift-drag still moves) |
 | `/pp icon on` / `off` | Pickpocket icon in the haul window |
 | `/pp minimap on` / `off` / `reset` | Minimap button |
 | `/pp window <seconds>` | Detection window, 0.1–10s |
+| `/pp coins` | Toggle Coins of Air tracking |
+| `/pp coins on` / `off` | Explicit enable/disable |
+| `/pp coins icon on` / `off` | Coin icon in the tracking window |
+| `/pp coins reset` | Reset coin session count |
 | `/pp help` | All commands |
 
 ## Options panel
 
 Open with `/pp` or click the minimap button.
 
-**Display** — six checkboxes: show/hide the haul window, lock position, show the pickpocket icon, show the minimap button, log items to chat, and show the character earnings graph. All straightforward toggles.
+**Display** — seven checkboxes: show/hide the haul window, lock position, show the pickpocket icon, show the minimap button, log items to chat, show the character earnings graph, and track Coins of Air. All straightforward toggles.
 
 **Tracking** — detection window slider. This is how long after a pickpocket cast the addon waits to attribute gold and items. Default is 2 seconds. If you're on bad latency and items are getting missed, bump it up.
 
 **Character Earnings** — horizontal bar graph comparing total earnings across all your rogues. Bars are rogue-yellow. Hover for a tooltip with total, count, and average. The whole section hides when you uncheck it.
+
+**Coins of Air** — show/hide icon checkbox, session count, character lifetime, account lifetime, and currently held. Only visible when tracking is enabled.
 
 **Lifetime Stats** — pinned at the bottom. Per-character and account-wide totals with session/character/account reset buttons.
 
@@ -56,7 +64,11 @@ Open with `/pp` or click the minimap button.
 
 **Items** — same idea but using `CHAT_MSG_LOOT`. When WoW says "You receive loot: [item]" shortly after a pick, the addon attributes it.
 
+**Coins of Air** — `CURRENCY_DISPLAY_UPDATE` fires when any currency changes. If it happens within the detection window and Coins of Air (currency 1416) increased, the delta is recorded.
+
 **Vendor sales** — your bags are snapshotted when you open a merchant. When you close it, anything missing from the tracked items list is assumed sold and the vendor price gets credited.
+
+**Window architecture** — both display windows (gold haul + coins) are built from a shared `CreateDisplayBar` factory. Drag, resize grip, lock-aware shift-drag, icon toggle, and position save are handled once. Each window just adds its own tooltip and display logic.
 
 **Class gating** — on login, the addon checks your class. Rogues get the full load. Non-rogues get a one-liner in chat and the account database initialized so `/pp account` works. No events registered, no frames created, no memory footprint.
 
@@ -73,12 +85,13 @@ Items aren't tracked across sessions. If you log out with unsold pickpocketed st
 ```
 config.lua     Constants, defaults, colours
 data.lua       SavedVariables access layer
-utils.lua      Formatting, bag scanning, helpers
+utils.lua      Formatting, bag scanning, shared display bar factory
 tracking.lua   Gold detection via PLAYER_MONEY
 items.lua      Item detection via CHAT_MSG_LOOT, vendor sales
+coins.lua      Coins of Air tracking + display window
 stats.lua      Lifetime stats (per-char + account-wide)
-ui.lua         Haul display window
-options.lua    Settings panel + bar graph
+ui.lua         Haul display window (built on shared bar factory)
+options.lua    Settings panel + bar graph + coin stats
 minimap.lua    Minimap button
 events.lua     Event routing + rogue gating
 commands.lua   Slash commands

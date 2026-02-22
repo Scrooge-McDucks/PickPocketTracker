@@ -1,5 +1,5 @@
 ## Interface: 120000
-## Version: 1.2.0
+## Version: 1.4.0
 ## Title: Pick Pocket Tracker
 ## Author: Scrooge-McDucks
 ## Notes: Track pickpocket gold and items with lifetime statistics, bar graphs, and account-wide totals.
@@ -13,7 +13,10 @@ data.lua
 utils.lua
 tracking.lua
 items.lua
+coins.lua
 stats.lua
+chart.lua
+slider.lua
 ui.lua
 options.lua
 minimap.lua

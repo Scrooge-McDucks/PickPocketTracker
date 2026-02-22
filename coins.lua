@@ -14,8 +14,8 @@ local _, NS = ...
 NS.Coins = {}
 
 local C_CurrencyInfo = C_CurrencyInfo
-local CURRENCY_ID    = 1416   -- Coins of Air
-local ICON_PATH      = "Interface/Icons/INV_Misc_Coin_17"
+local CURRENCY_ID    = NS.Config.COINS_OF_AIR_ID
+local ICON_PATH      = NS.Config.COINS_OF_AIR_ICON
 
 -- Session state
 NS.Coins.sessionCount = 0

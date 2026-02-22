@@ -7,6 +7,9 @@ local _, NS = ...
 
 NS.Tracking = {}
 
+local GetMoney = GetMoney
+local GetTime  = GetTime
+
 -- Session-only state (not persisted)
 NS.Tracking.sessionGold             = 0
 NS.Tracking.lastPickPocketTime      = 0
@@ -14,8 +17,11 @@ NS.Tracking.lastMoneyAmount         = 0
 NS.Tracking.detectionWindowSeconds  = NS.Config.DEFAULT_WINDOW_SECONDS
 
 function NS.Tracking:Initialize()
+  self.sessionGold            = 0
+  self.lastPickPocketTime     = 0
   self.lastMoneyAmount        = GetMoney()
-  self.detectionWindowSeconds = NS.Config.DEFAULT_WINDOW_SECONDS
+  -- Load persisted detection window (survives reload/logout)
+  self.detectionWindowSeconds = NS.Data:GetDetectionWindow()
 end
 
 function NS.Tracking:ResetSession()
@@ -25,7 +31,7 @@ function NS.Tracking:ResetSession()
 end
 
 --- Validate and apply a new detection window (seconds). Returns false if
---- the value is out of range.
+--- the value is out of range.  Persists to SavedVariables via NS.Data.
 function NS.Tracking:SetDetectionWindow(seconds)
   if not seconds
     or seconds < NS.Config.MIN_WINDOW_SECONDS
@@ -33,6 +39,7 @@ function NS.Tracking:SetDetectionWindow(seconds)
     return false
   end
   self.detectionWindowSeconds = seconds
+  NS.Data:SetDetectionWindow(seconds)
   return true
 end
 

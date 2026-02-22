@@ -62,6 +62,10 @@ function NS.Commands:HandleCommand(msg)
     self:HandleIconCommand(msg)
   elseif msg:match("^window") then
     self:HandleWindowCommand(msg)
+  elseif msg:match("^coins") then
+    self:HandleCoinsCommand(msg)
+  elseif msg:match("^autosell") then
+    self:HandleAutoSellCommand(msg)
   else
     NS.Utils:PrintError("Unknown command: " .. msg)
     NS.Utils:PrintInfo("Type /pp help for available commands")
@@ -92,6 +96,12 @@ function NS.Commands:HandleHelp()
   NS.Utils:Print(nil, "  /pp icon on|off - Show/hide icon")
   NS.Utils:Print(nil, "  /pp minimap on|off|reset - Minimap button")
   NS.Utils:Print(nil, "  /pp window <seconds> - Detection window (0.1-10)")
+  NS.Utils:Print(nil, "  /pp coins - Toggle Coins of Air tracking")
+  NS.Utils:Print(nil, "  /pp coins on|off - Enable/disable tracking")
+  NS.Utils:Print(nil, "  /pp coins icon on|off - Show/hide coin icon")
+  NS.Utils:Print(nil, "  /pp coins reset - Reset coin session count")
+  NS.Utils:Print(nil, "  /pp autosell - Toggle auto-sell fence items")
+  NS.Utils:Print(nil, "  /pp autosell on|off - Enable/disable auto-sell")
   NS.Utils:Print(nil, "  /pp help - Show this help")
 end
 
@@ -137,6 +147,7 @@ end
 function NS.Commands:HandleReset()
   if NS.Tracking then NS.Tracking:ResetSession() end
   if NS.Items then NS.Items:ResetSession() end
+  if NS.Coins then NS.Coins:ResetSession() end
   if NS.UI then NS.UI:UpdateDisplay() end
   NS.Utils:PrintWarning("Session reset - all data cleared")
 end
@@ -230,5 +241,71 @@ function NS.Commands:HandleWindowCommand(msg)
   else
     NS.Utils:PrintError(string.format("Window must be between %.1f and %.1f seconds",
       NS.Config.MIN_WINDOW_SECONDS, NS.Config.MAX_WINDOW_SECONDS))
+  end
+end
+
+function NS.Commands:HandleCoinsCommand(msg)
+  local subCmd = msg:match("^coins%s+(.+)$")
+
+  if not subCmd then
+    -- Toggle tracking on/off
+    local enabled = not NS.Data:ShouldTrackCoins()
+    NS.Data:SetTrackCoins(enabled)
+    if NS.Coins then NS.Coins:UpdateVisibility() end
+    if enabled then
+      NS.Utils:PrintSuccess("Coins of Air tracking enabled")
+    else
+      NS.Utils:PrintWarning("Coins of Air tracking disabled")
+    end
+    return
+  end
+
+  if subCmd == "icon on" then
+    NS.Data:SetShowCoinIcon(true)
+    if NS.Coins then NS.Coins:OnIconSettingChanged() end
+    NS.Utils:PrintWarning("Coin icon shown")
+  elseif subCmd == "icon off" then
+    NS.Data:SetShowCoinIcon(false)
+    if NS.Coins then NS.Coins:OnIconSettingChanged() end
+    NS.Utils:PrintWarning("Coin icon hidden")
+  elseif subCmd == "show" or subCmd == "on" then
+    NS.Data:SetTrackCoins(true)
+    if NS.Coins then NS.Coins:UpdateVisibility() end
+    NS.Utils:PrintSuccess("Coins of Air tracking enabled")
+  elseif subCmd == "hide" or subCmd == "off" then
+    NS.Data:SetTrackCoins(false)
+    if NS.Coins then NS.Coins:UpdateVisibility() end
+    NS.Utils:PrintWarning("Coins of Air tracking disabled")
+  elseif subCmd == "reset" then
+    if NS.Coins then NS.Coins:ResetSession() end
+    NS.Utils:PrintWarning("Coins of Air session reset")
+  else
+    NS.Utils:PrintError("Usage: /pp coins [on|off|icon on|off|reset]")
+  end
+end
+
+function NS.Commands:HandleAutoSellCommand(msg)
+  local subCmd = msg:match("^autosell%s+(%S+)$")
+
+  if not subCmd then
+    -- Toggle
+    local enabled = not NS.Data:ShouldAutoSell()
+    NS.Data:SetAutoSell(enabled)
+    if enabled then
+      NS.Utils:PrintSuccess("Auto-sell fence items enabled")
+    else
+      NS.Utils:PrintWarning("Auto-sell fence items disabled")
+    end
+    return
+  end
+
+  if subCmd == "on" then
+    NS.Data:SetAutoSell(true)
+    NS.Utils:PrintSuccess("Auto-sell fence items enabled")
+  elseif subCmd == "off" then
+    NS.Data:SetAutoSell(false)
+    NS.Utils:PrintWarning("Auto-sell fence items disabled")
+  else
+    NS.Utils:PrintError("Usage: /pp autosell [on|off]")
   end
 end
