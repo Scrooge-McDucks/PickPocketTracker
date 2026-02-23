@@ -9,7 +9,7 @@ NS.Config = {}
 
 -- Addon metadata
 NS.Config.ADDON_NAME = NS.name or "PickPocketTracker"
-NS.Config.VERSION = "1.5.0"
+NS.Config.VERSION = "1.5.1"
 
 -- Pick Pocket spell ID (unchanged since Classic)
 NS.Config.PICK_POCKET_SPELL_ID = 921
@@ -53,9 +53,9 @@ NS.Config.UI_DEFAULTS = {
   showBarGraph  = true,
 }
 
--- Minimap defaults
+-- Minimap defaults (standalone button — hidden by default, compartment is primary)
 NS.Config.MINIMAP_DEFAULTS = {
-  hide   = false,
+  hide   = true,
   angle  = 220,
   radius = 80,
 }

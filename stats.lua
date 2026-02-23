@@ -9,24 +9,37 @@ local _, NS = ...
 
 NS.Stats = {}
 
+local math_max      = math.max
+local math_floor    = math.floor
+local pairs         = pairs
+local time          = time
+local date          = date
+local table_concat  = table.concat
+
+-- Cached after Initialize — realm+name never change during a session.
+local cachedCharKey = nil
+
 --- Unique key for this character, stable across sessions.
 function NS.Stats:GetCharacterKey()
-  return GetRealmName() .. "-" .. UnitName("player")
+  if not cachedCharKey then
+    cachedCharKey = GetRealmName() .. "-" .. UnitName("player")
+  end
+  return cachedCharKey
 end
 
 function NS.Stats:Initialize()
   PickPocketTrackerAccountDB = PickPocketTrackerAccountDB or {}
-  local db = PickPocketTrackerAccountDB
+  self.db = PickPocketTrackerAccountDB
 
-  db.totalGold       = db.totalGold       or 0
-  db.totalItemsSold  = db.totalItemsSold  or 0
-  db.totalPickpockets = db.totalPickpockets or 0
-  db.totalCoinsOfAir = db.totalCoinsOfAir or 0
-  db.characters      = db.characters      or {}
+  self.db.totalGold        = self.db.totalGold        or 0
+  self.db.totalItemsSold   = self.db.totalItemsSold   or 0
+  self.db.totalPickpockets = self.db.totalPickpockets  or 0
+  self.db.totalCoinsOfAir  = self.db.totalCoinsOfAir  or 0
+  self.db.characters       = self.db.characters       or {}
 
   local key = self:GetCharacterKey()
-  if not db.characters[key] then
-    db.characters[key] = {
+  if not self.db.characters[key] then
+    self.db.characters[key] = {
       name            = UnitName("player"),
       class           = UnitClass("player"),
       goldLooted      = 0,
@@ -39,7 +52,7 @@ function NS.Stats:Initialize()
   end
 
   -- Backfill coinsOfAir for existing characters
-  local char = db.characters[key]
+  local char = self.db.characters[key]
   if char.coinsOfAir == nil then char.coinsOfAir = 0 end
 end
 
@@ -49,33 +62,33 @@ end
 
 function NS.Stats:RecordGoldLooted(amount)
   if amount <= 0 then return end
-  local char = PickPocketTrackerAccountDB.characters[self:GetCharacterKey()]
+  local char = self.db.characters[self:GetCharacterKey()]
   char.goldLooted     = char.goldLooted + amount
   char.lastPickpocket = time()
   if not char.firstPickpocket then char.firstPickpocket = time() end
-  PickPocketTrackerAccountDB.totalGold = PickPocketTrackerAccountDB.totalGold + amount
+  self.db.totalGold = self.db.totalGold + amount
 end
 
 function NS.Stats:RecordItemsSold(amount)
   if amount <= 0 then return end
-  local char = PickPocketTrackerAccountDB.characters[self:GetCharacterKey()]
+  local char = self.db.characters[self:GetCharacterKey()]
   char.itemsSold = char.itemsSold + amount
-  PickPocketTrackerAccountDB.totalItemsSold = PickPocketTrackerAccountDB.totalItemsSold + amount
+  self.db.totalItemsSold = self.db.totalItemsSold + amount
 end
 
 function NS.Stats:RecordPickpocket()
-  local char = PickPocketTrackerAccountDB.characters[self:GetCharacterKey()]
+  local char = self.db.characters[self:GetCharacterKey()]
   char.pickpocketCount = char.pickpocketCount + 1
   char.lastPickpocket  = time()
   if not char.firstPickpocket then char.firstPickpocket = time() end
-  PickPocketTrackerAccountDB.totalPickpockets = PickPocketTrackerAccountDB.totalPickpockets + 1
+  self.db.totalPickpockets = self.db.totalPickpockets + 1
 end
 
 function NS.Stats:RecordCoinsOfAir(amount)
   if amount <= 0 then return end
-  local char = PickPocketTrackerAccountDB.characters[self:GetCharacterKey()]
+  local char = self.db.characters[self:GetCharacterKey()]
   char.coinsOfAir = (char.coinsOfAir or 0) + amount
-  PickPocketTrackerAccountDB.totalCoinsOfAir = (PickPocketTrackerAccountDB.totalCoinsOfAir or 0) + amount
+  self.db.totalCoinsOfAir = (self.db.totalCoinsOfAir or 0) + amount
 end
 
 -------------------------------------------------------------------------------
@@ -83,7 +96,7 @@ end
 -------------------------------------------------------------------------------
 
 local function charData(self)
-  return PickPocketTrackerAccountDB.characters[self:GetCharacterKey()]
+  return self.db.characters[self:GetCharacterKey()]
 end
 
 function NS.Stats:GetCharacterGold()            return charData(self).goldLooted end
@@ -96,15 +109,15 @@ function NS.Stats:GetCharacterCoins()            return charData(self).coinsOfAi
 -- Account getters
 -------------------------------------------------------------------------------
 
-function NS.Stats:GetAccountGold()            return PickPocketTrackerAccountDB.totalGold end
-function NS.Stats:GetAccountItemsSold()        return PickPocketTrackerAccountDB.totalItemsSold end
-function NS.Stats:GetAccountPickpocketCount()  return PickPocketTrackerAccountDB.totalPickpockets end
+function NS.Stats:GetAccountGold()            return self.db.totalGold end
+function NS.Stats:GetAccountItemsSold()        return self.db.totalItemsSold end
+function NS.Stats:GetAccountPickpocketCount()  return self.db.totalPickpockets end
 function NS.Stats:GetAccountTotal()            return self:GetAccountGold() + self:GetAccountItemsSold() end
-function NS.Stats:GetAccountCoins()            return PickPocketTrackerAccountDB.totalCoinsOfAir or 0 end
+function NS.Stats:GetAccountCoins()            return self.db.totalCoinsOfAir or 0 end
 
 function NS.Stats:GetCharacterCount()
   local n = 0
-  for _ in pairs(PickPocketTrackerAccountDB.characters) do n = n + 1 end
+  for _ in pairs(self.db.characters) do n = n + 1 end
   return n
 end
 
@@ -113,14 +126,13 @@ end
 -------------------------------------------------------------------------------
 
 function NS.Stats:ResetCharacter()
-  local db   = PickPocketTrackerAccountDB
-  local char = db.characters[self:GetCharacterKey()]
+  local char = self.db.characters[self:GetCharacterKey()]
 
   -- Subtract from account totals (clamp to zero in case of data corruption)
-  db.totalGold        = math.max(0, db.totalGold        - char.goldLooted)
-  db.totalItemsSold   = math.max(0, db.totalItemsSold   - char.itemsSold)
-  db.totalPickpockets = math.max(0, db.totalPickpockets  - char.pickpocketCount)
-  db.totalCoinsOfAir  = math.max(0, (db.totalCoinsOfAir or 0) - (char.coinsOfAir or 0))
+  self.db.totalGold        = math_max(0, self.db.totalGold        - char.goldLooted)
+  self.db.totalItemsSold   = math_max(0, self.db.totalItemsSold   - char.itemsSold)
+  self.db.totalPickpockets = math_max(0, self.db.totalPickpockets  - char.pickpocketCount)
+  self.db.totalCoinsOfAir  = math_max(0, (self.db.totalCoinsOfAir or 0) - (char.coinsOfAir or 0))
 
   char.goldLooted      = 0
   char.itemsSold       = 0
@@ -133,13 +145,12 @@ function NS.Stats:ResetCharacter()
 end
 
 function NS.Stats:ResetAccount()
-  local db = PickPocketTrackerAccountDB
-  db.totalGold        = 0
-  db.totalItemsSold   = 0
-  db.totalPickpockets = 0
-  db.totalCoinsOfAir  = 0
+  self.db.totalGold        = 0
+  self.db.totalItemsSold   = 0
+  self.db.totalPickpockets = 0
+  self.db.totalCoinsOfAir  = 0
 
-  for _, char in pairs(db.characters) do
+  for _, char in pairs(self.db.characters) do
     char.goldLooted      = 0
     char.itemsSold       = 0
     char.pickpocketCount = 0
@@ -156,7 +167,7 @@ end
 -------------------------------------------------------------------------------
 
 local function fmtAvg(total, count)
-  return NS.Utils:FormatMoney(count > 0 and (total / count) or 0)
+  return NS.Utils:FormatMoney(count > 0 and math_floor(total / count) or 0)
 end
 
 function NS.Stats:GetCharacterStatsFormatted()
@@ -179,23 +190,22 @@ function NS.Stats:GetCharacterStatsFormatted()
   if c.lastPickpocket then
     lines[#lines + 1] = "Last pickpocket: "  .. date("%Y-%m-%d %H:%M", c.lastPickpocket)
   end
-  return table.concat(lines, "\n")
+  return table_concat(lines, "\n")
 end
 
 function NS.Stats:GetAccountStatsFormatted()
-  local db = PickPocketTrackerAccountDB
-  local total = db.totalGold + db.totalItemsSold
+  local total = self.db.totalGold + self.db.totalItemsSold
   local lines = {
     "=== Account-Wide Statistics ===",
-    "Total gold looted: "      .. NS.Utils:FormatMoney(db.totalGold),
-    "Total items sold: "       .. NS.Utils:FormatMoney(db.totalItemsSold),
+    "Total gold looted: "      .. NS.Utils:FormatMoney(self.db.totalGold),
+    "Total items sold: "       .. NS.Utils:FormatMoney(self.db.totalItemsSold),
     "Total earned: "           .. NS.Utils:FormatMoney(total),
-    "Total pickpockets: "      .. db.totalPickpockets,
+    "Total pickpockets: "      .. self.db.totalPickpockets,
     "Characters: "             .. self:GetCharacterCount(),
-    "Average per pickpocket: " .. fmtAvg(total, db.totalPickpockets),
+    "Average per pickpocket: " .. fmtAvg(total, self.db.totalPickpockets),
   }
-  if (db.totalCoinsOfAir or 0) > 0 then
-    lines[#lines + 1] = "Total Coins of Air: " .. (db.totalCoinsOfAir or 0)
+  if (self.db.totalCoinsOfAir or 0) > 0 then
+    lines[#lines + 1] = "Total Coins of Air: " .. (self.db.totalCoinsOfAir or 0)
   end
-  return table.concat(lines, "\n")
+  return table_concat(lines, "\n")
 end

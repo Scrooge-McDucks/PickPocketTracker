@@ -23,6 +23,13 @@ local _, NS = ...
 
 NS.Items = {}
 
+local pairs         = pairs
+local ipairs        = ipairs
+local tonumber      = tonumber
+local string_format = string.format
+local math_min      = math.min
+local table_concat  = table.concat
+
 -- Session-only state
 NS.Items.vendorSnapshot     = nil
 NS.Items.sessionVendorValue = 0
@@ -108,10 +115,10 @@ function NS.Items:RecordPickpocketedItem(itemID, itemName, itemTexture, quantity
   -- Optional chat message
   if NS.Data:ShouldChatLogItems() then
     if vendorPrice > 0 then
-      NS.Utils:PrintInfo(string.format("Pickpocketed: %dx %s (Vendor: %s)",
+      NS.Utils:PrintInfo(string_format("Pickpocketed: %dx %s (Vendor: %s)",
         quantity, itemName, NS.Utils:FormatMoney(vendorPrice * quantity)))
     else
-      NS.Utils:PrintNote(string.format("Pickpocketed: %dx %s (unsellable)", quantity, itemName))
+      NS.Utils:PrintNote(string_format("Pickpocketed: %dx %s (unsellable)", quantity, itemName))
     end
   end
 
@@ -142,7 +149,7 @@ function NS.Items:OnMerchantClosed()
       local sold = (self.vendorSnapshot[itemID] or 0) - (after[itemID] or 0)
       if sold > 0 then
         -- Don't credit more than we're tracking
-        self:RecordSale(itemID, itemData, math.min(sold, itemData.quantity))
+        self:RecordSale(itemID, itemData, math_min(sold, itemData.quantity))
       end
     end
   end
@@ -162,7 +169,7 @@ function NS.Items:RecordSale(itemID, itemData, qty)
   if NS.Stats then NS.Stats:RecordItemsSold(value) end
 
   if NS.Data:ShouldChatLogItems() then
-    NS.Utils:PrintSuccess(string.format("Sold %dx %s for %s",
+    NS.Utils:PrintSuccess(string_format("Sold %dx %s for %s",
       qty, itemData.name, NS.Utils:FormatMoney(value)))
   end
 end
@@ -281,18 +288,18 @@ function NS.Items:GetDetailedStats()
   local count = self:GetUniqueItemCount()
   if count > 0 then
     lines[#lines + 1] = ""
-    lines[#lines + 1] = string.format("Items tracked (%d unique):", count)
+    lines[#lines + 1] = string_format("Items tracked (%d unique):", count)
 
     local sorted = NS.Utils:TableSortBy(NS.Data:GetItems(), function(i) return i.totalValue end)
     for _, entry in ipairs(sorted) do
       local d = entry.value
       if d.isFence then
-        lines[#lines + 1] = string.format("  %s: %d looted, %d sold (%s), %d unsold (%s)",
+        lines[#lines + 1] = string_format("  %s: %d looted, %d sold (%s), %d unsold (%s)",
           d.name, d.quantity + d.soldQuantity, d.soldQuantity,
           NS.Utils:FormatMoney(d.soldValue), d.quantity,
           NS.Utils:FormatMoney(d.vendorPrice * d.quantity))
       else
-        lines[#lines + 1] = string.format("  %s [unsellable]: %d looted, %d in bags",
+        lines[#lines + 1] = string_format("  %s [unsellable]: %d looted, %d in bags",
           d.name, d.quantity + d.soldQuantity, d.quantity)
       end
     end
@@ -301,5 +308,5 @@ function NS.Items:GetDetailedStats()
     lines[#lines + 1] = "No items tracked yet. Go pickpocket something!"
   end
 
-  return table.concat(lines, "\n")
+  return table_concat(lines, "\n")
 end

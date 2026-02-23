@@ -7,6 +7,25 @@ local _, NS = ...
 
 NS.Data = {}
 
+local math_max   = math.max
+local math_min   = math.min
+local math_floor = math.floor
+local pairs      = pairs
+
+-------------------------------------------------------------------------------
+-- Helpers
+-------------------------------------------------------------------------------
+
+--- Clamp a value between min and max.
+local function Clamp(value, lo, hi)
+  return math_max(lo, math_min(hi, value))
+end
+
+--- Round to nearest integer.
+local function Round(x)
+  return math_floor(x + 0.5)
+end
+
 -------------------------------------------------------------------------------
 -- Initialization — called once on PLAYER_LOGIN
 -------------------------------------------------------------------------------
@@ -26,22 +45,29 @@ function NS.Data:InitializeUI()
   local db = PickPocketTrackerDB
   local d  = NS.Config.UI_DEFAULTS
 
-  if db.hidden       == nil then db.hidden       = d.hidden end
-  if db.locked       == nil then db.locked       = d.locked end
-  if db.showIcon     == nil then db.showIcon     = d.showIcon end
-  if db.chatLogItems == nil then db.chatLogItems = d.chatLogItems end
-  if db.showBarGraph == nil then db.showBarGraph = d.showBarGraph end
-  if db.trackCoins   == nil then db.trackCoins   = false end
-  if db.autoSell     == nil then db.autoSell     = NS.Config.AUTOSELL_DEFAULTS.enabled end
-  if db.point         == nil then db.point         = d.point end
-  if db.relativePoint == nil then db.relativePoint = d.relativePoint end
-  if db.offsetX       == nil then db.offsetX       = d.offsetX end
-  if db.offsetY       == nil then db.offsetY       = d.offsetY end
-  if db.width         == nil then db.width         = d.width end
-  if db.height        == nil then db.height        = d.height end
-  if db.maxGoldBars   == nil then db.maxGoldBars   = NS.Config.CHART_DEFAULTS.maxBars end
-  if db.maxCoinBars   == nil then db.maxCoinBars   = NS.Config.CHART_DEFAULTS.maxBars end
-  if db.detectionWindow == nil then db.detectionWindow = NS.Config.DEFAULT_WINDOW_SECONDS end
+  local defaults = {
+    hidden          = d.hidden,
+    locked          = d.locked,
+    showIcon        = d.showIcon,
+    chatLogItems    = d.chatLogItems,
+    showBarGraph    = d.showBarGraph,
+    trackCoins      = false,
+    coinWindowHidden = false,
+    autoSell        = NS.Config.AUTOSELL_DEFAULTS.enabled,
+    point           = d.point,
+    relativePoint   = d.relativePoint,
+    offsetX         = d.offsetX,
+    offsetY         = d.offsetY,
+    width           = d.width,
+    height          = d.height,
+    maxGoldBars     = NS.Config.CHART_DEFAULTS.maxBars,
+    maxCoinBars     = NS.Config.CHART_DEFAULTS.maxBars,
+    detectionWindow = NS.Config.DEFAULT_WINDOW_SECONDS,
+  }
+
+  for key, default in pairs(defaults) do
+    if db[key] == nil then db[key] = default end
+  end
 end
 
 function NS.Data:InitializeMinimap()
@@ -67,7 +93,7 @@ end
 --- Returns true if the current character is a Rogue.
 function NS.Data:IsRogue()
   local _, classToken = UnitClass("player")
-  return classToken == NS.Config.REQUIRED_CLASS
+  return classToken ~= nil and classToken == NS.Config.REQUIRED_CLASS
 end
 
 -------------------------------------------------------------------------------
@@ -89,6 +115,10 @@ function NS.Data:SetTrackCoins(v)   self.db.trackCoins   = v end
 
 function NS.Data:ShouldTrackCoins()    return self.db.trackCoins end
 
+-- Coin window visibility (independent of tracking — you can track without showing)
+function NS.Data:IsCoinWindowHidden()  return self.db.coinWindowHidden end
+function NS.Data:SetCoinWindowHidden(v) self.db.coinWindowHidden = v end
+
 -- Auto-sell fence items
 function NS.Data:ShouldAutoSell()    return self.db.autoSell end
 function NS.Data:SetAutoSell(v)      self.db.autoSell = v end
@@ -96,27 +126,27 @@ function NS.Data:SetAutoSell(v)      self.db.autoSell = v end
 -- Max chart bars (per-graph, independent values)
 function NS.Data:GetMaxGoldBars()
   local v = self.db.maxGoldBars or NS.Config.CHART_DEFAULTS.maxBars
-  return math.max(NS.Config.CHART_DEFAULTS.minBars, math.min(NS.Config.CHART_DEFAULTS.maxBarsLimit, v))
+  return Clamp(v, NS.Config.CHART_DEFAULTS.minBars, NS.Config.CHART_DEFAULTS.maxBarsLimit)
 end
 function NS.Data:SetMaxGoldBars(v)
-  self.db.maxGoldBars = math.max(NS.Config.CHART_DEFAULTS.minBars, math.min(NS.Config.CHART_DEFAULTS.maxBarsLimit, v))
+  self.db.maxGoldBars = Clamp(v, NS.Config.CHART_DEFAULTS.minBars, NS.Config.CHART_DEFAULTS.maxBarsLimit)
 end
 
 function NS.Data:GetMaxCoinBars()
   local v = self.db.maxCoinBars or NS.Config.CHART_DEFAULTS.maxBars
-  return math.max(NS.Config.CHART_DEFAULTS.minBars, math.min(NS.Config.CHART_DEFAULTS.maxBarsLimit, v))
+  return Clamp(v, NS.Config.CHART_DEFAULTS.minBars, NS.Config.CHART_DEFAULTS.maxBarsLimit)
 end
 function NS.Data:SetMaxCoinBars(v)
-  self.db.maxCoinBars = math.max(NS.Config.CHART_DEFAULTS.minBars, math.min(NS.Config.CHART_DEFAULTS.maxBarsLimit, v))
+  self.db.maxCoinBars = Clamp(v, NS.Config.CHART_DEFAULTS.minBars, NS.Config.CHART_DEFAULTS.maxBarsLimit)
 end
 
 -- Detection window (seconds) — persisted so it survives reload/logout
 function NS.Data:GetDetectionWindow()
   local v = self.db.detectionWindow or NS.Config.DEFAULT_WINDOW_SECONDS
-  return math.max(NS.Config.MIN_WINDOW_SECONDS, math.min(NS.Config.MAX_WINDOW_SECONDS, v))
+  return Clamp(v, NS.Config.MIN_WINDOW_SECONDS, NS.Config.MAX_WINDOW_SECONDS)
 end
 function NS.Data:SetDetectionWindow(v)
-  self.db.detectionWindow = math.max(NS.Config.MIN_WINDOW_SECONDS, math.min(NS.Config.MAX_WINDOW_SECONDS, v))
+  self.db.detectionWindow = Clamp(v, NS.Config.MIN_WINDOW_SECONDS, NS.Config.MAX_WINDOW_SECONDS)
 end
 
 function NS.Data:GetWindowPosition()
@@ -126,8 +156,8 @@ end
 function NS.Data:SetWindowPosition(point, relPoint, x, y)
   self.db.point         = point
   self.db.relativePoint = relPoint
-  self.db.offsetX       = math.floor(x + 0.5)
-  self.db.offsetY       = math.floor(y + 0.5)
+  self.db.offsetX       = Round(x)
+  self.db.offsetY       = Round(y)
 end
 
 function NS.Data:GetWindowSize()
@@ -136,14 +166,14 @@ end
 
 function NS.Data:SetWindowSize(width, height)
   width, height = self:ClampWindowSize(width, height)
-  self.db.width  = math.floor(width  + 0.5)
-  self.db.height = math.floor(height + 0.5)
+  self.db.width  = Round(width)
+  self.db.height = Round(height)
 end
 
 function NS.Data:ClampWindowSize(width, height)
   local d = NS.Config.UI_DEFAULTS
-  width  = math.max(d.minWidth,  math.min(d.maxWidth,  width))
-  height = math.max(d.minHeight, math.min(d.maxHeight, height))
+  width  = Clamp(width,  d.minWidth,  d.maxWidth)
+  height = Clamp(height, d.minHeight, d.maxHeight)
   return width, height
 end
 
@@ -195,8 +225,8 @@ function NS.Data:SetCoinWindowPosition(point, relPoint, x, y)
   self.db.coinWindow = self.db.coinWindow or {}
   self.db.coinWindow.point         = point
   self.db.coinWindow.relativePoint = relPoint
-  self.db.coinWindow.offsetX       = math.floor(x + 0.5)
-  self.db.coinWindow.offsetY       = math.floor(y + 0.5)
+  self.db.coinWindow.offsetX       = Round(x)
+  self.db.coinWindow.offsetY       = Round(y)
 end
 
 function NS.Data:GetCoinWindowSize()
@@ -210,11 +240,11 @@ end
 
 function NS.Data:SetCoinWindowSize(w, h)
   local d = NS.Config.COIN_WINDOW_DEFAULTS
-  w = math.max(d.minWidth,  math.min(d.maxWidth,  w))
-  h = math.max(d.minHeight, math.min(d.maxHeight, h))
+  w = Clamp(w, d.minWidth,  d.maxWidth)
+  h = Clamp(h, d.minHeight, d.maxHeight)
   self.db.coinWindow = self.db.coinWindow or {}
-  self.db.coinWindow.width  = math.floor(w + 0.5)
-  self.db.coinWindow.height = math.floor(h + 0.5)
+  self.db.coinWindow.width  = Round(w)
+  self.db.coinWindow.height = Round(h)
 end
 
 function NS.Data:ShouldShowCoinIcon()

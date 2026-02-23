@@ -21,6 +21,11 @@ local _, NS = ...
 
 NS.SliderFactory = {}
 
+local math_max   = math.max
+local math_min   = math.min
+local math_floor = math.floor
+local string_format = string.format
+
 function NS.SliderFactory:Create(config)
   local parent = config.parent
   local labelText = config.label or "Max Characters to Display"
@@ -55,7 +60,7 @@ function NS.SliderFactory:Create(config)
   slider:EnableMouseWheel(true)
   slider:SetScript("OnMouseWheel", function(self, delta)
     local val = self:GetValue() + (delta > 0 and step or -step)
-    val = math.max(minVal, math.min(maxVal, val))
+    val = math_max(minVal, math_min(maxVal, val))
     self:SetValue(val)
   end)
 
@@ -72,17 +77,17 @@ function NS.SliderFactory:Create(config)
   local initial = minVal
   if config.getter then
     initial = config.getter()
-    initial = math.max(minVal, math.min(maxVal, initial))
+    initial = math_max(minVal, math_min(maxVal, initial))
   end
 
-  sliderLabel:SetText(string.format("%s: %d", labelText, initial))
+  sliderLabel:SetText(string_format("%s: %d", labelText, initial))
   slider:SetValue(initial)
 
   -- OnValueChanged: persist + redraw
   slider:SetScript("OnValueChanged", function(_, val)
-    val = math.floor(val + 0.5)
-    val = math.max(minVal, math.min(maxVal, val))
-    sliderLabel:SetText(string.format("%s: %d", labelText, val))
+    val = math_floor(val + 0.5)
+    val = math_max(minVal, math_min(maxVal, val))
+    sliderLabel:SetText(string_format("%s: %d", labelText, val))
     if config.setter then config.setter(val) end
     if config.onChange then config.onChange() end
   end)

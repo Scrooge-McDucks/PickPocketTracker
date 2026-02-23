@@ -11,8 +11,9 @@ local _, NS = ...
 
 NS.Events = {}
 
-local CreateFrame  = CreateFrame
-local UnitGUID     = UnitGUID
+local CreateFrame     = CreateFrame
+local UnitGUID        = UnitGUID
+local string_format   = string.format
 
 local eventFrame = CreateFrame("Frame")
 
@@ -61,7 +62,7 @@ handlers.PLAYER_LOGIN = function()
 
   -- Non-rogues: minimal load, no UI, no tracking
   if not NS.Data:IsRogue() then
-    NS.Utils:PrintInfo(string.format("v%s loaded (non-rogue — tracking disabled, /pp account for stats).",
+    NS.Utils:PrintInfo(string_format("v%s loaded (non-rogue — tracking disabled, /pp account for stats).",
       NS.Config.VERSION))
     return
   end
@@ -89,7 +90,7 @@ handlers.PLAYER_LOGIN = function()
     end)
   end
 
-  NS.Utils:PrintInfo(string.format("v%s loaded. Type /pp for options.", NS.Config.VERSION))
+  NS.Utils:PrintInfo(string_format("v%s loaded. Type /pp for options.", NS.Config.VERSION))
 end
 
 -------------------------------------------------------------------------------
@@ -125,7 +126,7 @@ handlers.CHAT_MSG_LOOT = function(_, msg, _, _, _, _, _, _, _, _, _, _, senderGU
   if not itemLink then return end
 
   itemLink = "|H" .. itemLink .. "|h"
-  local quantity = tonumber(msg:match("|rx(%d+)")) or 1
+  local quantity = tonumber(msg:match("x(%d+)%s*$")) or 1
 
   NS.Items:OnLootReceived(itemLink, quantity)
 end

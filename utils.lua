@@ -6,6 +6,15 @@ local _, NS = ...
 
 NS.Utils = {}
 
+local math_max    = math.max
+local math_min    = math.min
+local math_floor  = math.floor
+local tostring    = tostring
+local pairs       = pairs
+local unpack      = unpack
+local string_format = string.format
+local table_sort    = table.sort
+
 -------------------------------------------------------------------------------
 -- Chat output
 -------------------------------------------------------------------------------
@@ -35,33 +44,41 @@ function NS.Utils:PrintNote(text)    self:Print(NS.Config:GetColor("NOTE"), text
 -- Money formatting
 -------------------------------------------------------------------------------
 
+-- Pre-computed icon texture strings (built once on first use)
+local moneyIconsBuilt = false
+local gIcon, sIcon, cIcon
+
+local function EnsureMoneyIcons()
+  if moneyIconsBuilt then return end
+  local sz  = NS.Config.MONEY_ICONS.size
+  local fmt = "|T%s:%d:%d:0:0|t"
+  gIcon = string_format(fmt, NS.Config.MONEY_ICONS.goldIcon,   sz, sz)
+  sIcon = string_format(fmt, NS.Config.MONEY_ICONS.silverIcon, sz, sz)
+  cIcon = string_format(fmt, NS.Config.MONEY_ICONS.copperIcon, sz, sz)
+  moneyIconsBuilt = true
+end
+
 --- Full format with gold/silver/copper icons: "5[G] 20[S] 30[C]"
 function NS.Utils:FormatMoney(copper)
-  local gold   = math.floor(copper / 10000)
-  local silver = math.floor((copper % 10000) / 100)
+  EnsureMoneyIcons()
+  local gold   = math_floor(copper / 10000)
+  local silver = math_floor((copper % 10000) / 100)
   local cop    = copper % 100
-
-  local sz = NS.Config.MONEY_ICONS.size
-  local fmt = "|T%s:%d:%d:0:0|t"
-  local gI = fmt:format(NS.Config.MONEY_ICONS.goldIcon,   sz, sz)
-  local sI = fmt:format(NS.Config.MONEY_ICONS.silverIcon, sz, sz)
-  local cI = fmt:format(NS.Config.MONEY_ICONS.copperIcon, sz, sz)
-
-  return string.format("%d%s %d%s %d%s", gold, gI, silver, sI, cop, cI)
+  return string_format("%d%s %d%s %d%s", gold, gIcon, silver, sIcon, cop, cIcon)
 end
 
 --- Compact text-only format: "5g 20s" or "50s 10c" or "25c"
 function NS.Utils:FormatMoneyCompact(copper)
-  local gold   = math.floor(copper / 10000)
-  local silver = math.floor((copper % 10000) / 100)
+  local gold   = math_floor(copper / 10000)
+  local silver = math_floor((copper % 10000) / 100)
   local cop    = copper % 100
 
   if gold > 0 then
-    return string.format("%dg %ds", gold, silver)
+    return string_format("%dg %ds", gold, silver)
   elseif silver > 0 then
-    return string.format("%ds %dc", silver, cop)
+    return string_format("%ds %dc", silver, cop)
   else
-    return string.format("%dc", cop)
+    return string_format("%dc", cop)
   end
 end
 
@@ -84,7 +101,7 @@ function NS.Utils:TableSortBy(tbl, keyFunc)
   for key, value in pairs(tbl) do
     array[#array + 1] = { key = key, value = value }
   end
-  table.sort(array, function(a, b)
+  table_sort(array, function(a, b)
     return keyFunc(a.value) > keyFunc(b.value)
   end)
   return array
@@ -95,7 +112,7 @@ end
 -------------------------------------------------------------------------------
 
 function NS.Utils:Clamp(value, min, max)
-  return math.max(min, math.min(max, value))
+  return math_max(min, math_min(max, value))
 end
 
 -------------------------------------------------------------------------------
@@ -290,8 +307,8 @@ function NS.Utils:CreateDisplayBar(opts)
       f:SetScript("OnSizeChanged", nil)
       local w, h = f:GetWidth(), f:GetHeight()
       -- Clamp to bounds
-      w = math.max(r.minW, math.min(r.maxW, w))
-      h = math.max(r.minH, math.min(r.maxH, h))
+      w = math_max(r.minW, math_min(r.maxW, w))
+      h = math_max(r.minH, math_min(r.maxH, h))
       f:SetSize(w, h)
       if r.onSaveSize then r.onSaveSize(w, h) end
       if opts.onResize then opts.onResize() end

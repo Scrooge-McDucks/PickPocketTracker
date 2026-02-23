@@ -12,24 +12,32 @@ local _, NS = ...
 
 NS.Minimap = NS.Minimap or {}
 
+local math_rad  = math.rad
+local math_deg  = math.deg
+local math_cos  = math.cos
+local math_sin  = math.sin
+local math_atan2 = math.atan2
+
 --- Safety net: ensure minimap SV subtable exists even before Data:Initialize.
+--- References NS.Config.MINIMAP_DEFAULTS as single source of truth.
 local function ensureDB()
   PickPocketTrackerDB = PickPocketTrackerDB or {}
   if PickPocketTrackerDB.minimap == nil then PickPocketTrackerDB.minimap = {} end
   local mm = PickPocketTrackerDB.minimap
-  if mm.hide   == nil then mm.hide   = false end
-  if mm.angle  == nil then mm.angle  = 220 end
-  if mm.radius == nil then mm.radius = 80 end
+  local d  = NS.Config.MINIMAP_DEFAULTS
+  if mm.hide   == nil then mm.hide   = d.hide end
+  if mm.angle  == nil then mm.angle  = d.angle end
+  if mm.radius == nil then mm.radius = d.radius end
   return mm
 end
 
 --- Position button around minimap edge using polar coordinates.
 local function posFromAngle(btn, angleDeg, radius)
-  local a = math.rad(angleDeg or 0)
+  local a = math_rad(angleDeg or 0)
   btn:ClearAllPoints()
   btn:SetPoint("CENTER", Minimap, "CENTER",
-    math.cos(a) * (radius or 80),
-    math.sin(a) * (radius or 80))
+    math_cos(a) * (radius or 80),
+    math_sin(a) * (radius or 80))
 end
 
 --- Calculate angle from minimap centre to cursor position.
@@ -37,7 +45,7 @@ local function angleFromCursor()
   local mx, my = Minimap:GetCenter()
   local cx, cy = GetCursorPosition()
   local s = Minimap:GetEffectiveScale()
-  return math.deg(math.atan2(cy / s - my, cx / s - mx)) % 360
+  return math_deg(math_atan2(cy / s - my, cx / s - mx)) % 360
 end
 
 function NS.Minimap:Create(onToggle)
@@ -48,7 +56,7 @@ function NS.Minimap:Create(onToggle)
   end
 
   local mm  = ensureDB()
-  local btn = CreateFrame("Button", "PickPocketTrackerMinimapButton", Minimap)
+  local btn = CreateFrame("Button", nil, Minimap)
   btn:SetSize(31, 31)
   btn:SetFrameStrata("MEDIUM")
   btn:SetFrameLevel(8)

@@ -15,6 +15,15 @@ NS.Options.detectionSlider = nil  -- detection window slider ref
 NS.Options.detectionLabel  = nil  -- detection window label ref
 NS.Options.coinIconCb      = nil  -- coin icon checkbox ref
 
+local math_max      = math.max
+local math_min      = math.min
+local math_floor    = math.floor
+local math_abs      = math.abs
+local ipairs        = ipairs
+local pairs         = pairs
+local tostring      = tostring
+local string_format = string.format
+
 --------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
@@ -91,7 +100,7 @@ local function CreateSlider(parent, minVal, maxVal, step, width)
   slider:EnableMouseWheel(true)
   slider:SetScript("OnMouseWheel", function(self, delta)
     local val = self:GetValue() + (delta > 0 and step or -step)
-    val = math.max(minVal, math.min(maxVal, val))
+    val = math_max(minVal, math_min(maxVal, val))
     self:SetValue(val)
   end)
 
@@ -153,7 +162,14 @@ function NS.Options:CreateOptionsFrame()
   local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
   close:SetPoint("TOPRIGHT", -5, -5)
 
-  table.insert(UISpecialFrames, "PickPocketTrackerOptionsFrame")
+  -- Only insert once (guard against re-entry)
+  local alreadyRegistered = false
+  for _, name in ipairs(UISpecialFrames) do
+    if name == "PickPocketTrackerOptionsFrame" then alreadyRegistered = true; break end
+  end
+  if not alreadyRegistered then
+    table.insert(UISpecialFrames, "PickPocketTrackerOptionsFrame")
+  end
   return f
 end
 
@@ -212,7 +228,7 @@ function NS.Options:PopulateSettings(content)
       function() return NS.Data:ShouldShowIcon() end,
       function(v) NS.Data:SetShowIcon(v); NS.UI:OnIconSettingChanged() end },
 
-    { "Show Minimap Button", "Display the minimap button for quick access",
+    { "Show Standalone Minimap Button", "Show a separate draggable button around the minimap edge (the addon always appears in the Addon Compartment)",
       function() return not NS.Data:IsMinimapHidden() end,
       function(v) NS.Data:SetMinimapHidden(not v); if NS.Minimap then NS.Minimap:Apply() end end },
 
@@ -275,7 +291,7 @@ function NS.Options:PopulateSettings(content)
 
   local sliderLabel = content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   sliderLabel:SetPoint("TOPLEFT", 18, y)
-  sliderLabel:SetText(string.format("Detection Window: %.1f seconds", NS.Tracking:GetDetectionWindow()))
+  sliderLabel:SetText(string_format("Detection Window: %.1f seconds", NS.Tracking:GetDetectionWindow()))
   self.detectionLabel = sliderLabel
 
   -- Reset to default button
@@ -286,7 +302,7 @@ function NS.Options:PopulateSettings(content)
   resetBtn:SetNormalFontObject("GameFontHighlightSmall")
   resetBtn:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(string.format("Reset to %.1fs", NS.Config.DEFAULT_WINDOW_SECONDS), 1, 1, 1)
+    GameTooltip:SetText(string_format("Reset to %.1fs", NS.Config.DEFAULT_WINDOW_SECONDS), 1, 1, 1)
     GameTooltip:Show()
   end)
   resetBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -297,8 +313,8 @@ function NS.Options:PopulateSettings(content)
   slider:SetValue(NS.Tracking:GetDetectionWindow())
   sliderLow:SetText("0.1s"); sliderHigh:SetText("10.0s")
   slider:SetScript("OnValueChanged", function(_, val)
-    val = math.floor(val * 10 + 0.5) / 10
-    sliderLabel:SetText(string.format("Detection Window: %.1f seconds", val))
+    val = math_floor(val * 10 + 0.5) / 10
+    sliderLabel:SetText(string_format("Detection Window: %.1f seconds", val))
     NS.Tracking:SetDetectionWindow(val)
   end)
   self.detectionSlider = slider
@@ -389,9 +405,20 @@ function NS.Options:PopulateSettings(content)
   coinIconCb:SetPoint("TOPLEFT", 8, -38)
   self.coinIconCb = coinIconCb
 
+  -- Window visibility checkbox
+  local coinWindowCb = CreateCheckbox(coinSection, "Show Coin Window",
+    "Show or hide the Coins of Air tracking window (tracking continues in background)",
+    not NS.Data:IsCoinWindowHidden(),
+    function(v)
+      NS.Data:SetCoinWindowHidden(not v)
+      if NS.Coins then NS.Coins:UpdateVisibility() end
+    end)
+  coinWindowCb:SetPoint("TOPLEFT", 8, -64)
+  self.coinWindowCb = coinWindowCb
+
   -- Coin stats text
   local coinStatsFrame = CreateFrame("Frame", nil, coinSection)
-  coinStatsFrame:SetPoint("TOPLEFT", 18, -66)
+  coinStatsFrame:SetPoint("TOPLEFT", 18, -92)
   coinStatsFrame:SetSize(350, 60)
   self.coinStatsFrame = coinStatsFrame
 
@@ -416,7 +443,7 @@ function NS.Options:PopulateSettings(content)
   cy = cy - 16
   self.coinStatValues.held, _ = MakeCoinLine(coinStatsFrame, cy, "Currently held:")
 
-  coinStatsFrame:SetHeight(math.abs(cy) + 10)
+  coinStatsFrame:SetHeight(math_abs(cy) + 10)
 
   -- Slider: Max Characters (coin graph) — shared slider factory
   local coinSlider = NS.SliderFactory:Create({
@@ -426,12 +453,12 @@ function NS.Options:PopulateSettings(content)
     setter   = function(v) NS.Data:SetMaxCoinBars(v) end,
     onChange = function() NS.Options:UpdateCoinGraph(); NS.Options:ResizeScrollChild() end,
   })
-  coinSlider:SetPoint("TOPLEFT", 18, -(66 + math.abs(cy) + 20))
+  coinSlider:SetPoint("TOPLEFT", 18, -(92 + math_abs(cy) + 20))
   self.coinSlider = coinSlider
 
   -- Coin graph holder
   local coinGraphHolder = CreateFrame("Frame", nil, coinSection)
-  coinGraphHolder:SetPoint("TOPLEFT", 18, -(66 + math.abs(cy) + 76))
+  coinGraphHolder:SetPoint("TOPLEFT", 18, -(92 + math_abs(cy) + 76))
   coinGraphHolder:SetSize(350, 10)
   self.coinGraphHolder = coinGraphHolder
 
@@ -451,7 +478,7 @@ function NS.Options:PopulateSettings(content)
     coinSlider:Hide(); coinGraphHolder:Hide()
   end
 
-  content:SetHeight(math.abs(y) + 500)
+  content:SetHeight(math_abs(y) + 500)
 end
 
 --------------------------------------------------------------------------------
@@ -471,11 +498,16 @@ function NS.Options:RefreshControls()
     self.coinIconCb:SetChecked(NS.Data:ShouldShowCoinIcon())
   end
 
+  -- Coin window visibility checkbox
+  if self.coinWindowCb then
+    self.coinWindowCb:SetChecked(not NS.Data:IsCoinWindowHidden())
+  end
+
   -- Detection window slider + label
   if self.detectionSlider and self.detectionLabel then
     local val = NS.Tracking:GetDetectionWindow()
     self.detectionSlider:SetValue(val)
-    self.detectionLabel:SetText(string.format("Detection Window: %.1f seconds", val))
+    self.detectionLabel:SetText(string_format("Detection Window: %.1f seconds", val))
   end
 
   -- Graph section visibility
@@ -533,7 +565,7 @@ function NS.Options:UpdateGoldGraph()
       if entry.extra and entry.extra.count then
         GameTooltip:AddDoubleLine("Pickpockets:", entry.extra.count, 1,1,1, 1,1,1)
         if entry.extra.count > 0 then
-          GameTooltip:AddDoubleLine("Average:", NS.Utils:FormatMoney(math.floor(entry.value / entry.extra.count)), 1,1,1, 1,1,1)
+          GameTooltip:AddDoubleLine("Average:", NS.Utils:FormatMoney(math_floor(entry.value / entry.extra.count)), 1,1,1, 1,1,1)
         end
       end
     end,
@@ -590,7 +622,7 @@ function NS.Options:ResizeScrollChild()
   if not self.scrollChild then return end
 
   -- graphY is the negative Y offset where the graph section starts
-  local bottom = math.abs(self.graphY)
+  local bottom = math_abs(self.graphY)
 
   -- Graph section: anchored at graphY
   if self.graphSection then
@@ -611,7 +643,7 @@ function NS.Options:ResizeScrollChild()
     if self.coinSection:IsShown() then
       local statsH = self.coinStatsFrame and self.coinStatsFrame:GetHeight() or 60
       -- Always include header + checkboxes + stats
-      bottom = bottom + statsH + 100
+      bottom = bottom + statsH + 126
 
       -- Only add coin graph height if it's visible
       if self.coinGraphHolder and self.coinGraphHolder:IsShown() then
@@ -681,13 +713,13 @@ function NS.Options:CreateBottomPanel()
     if not NS.Stats then return end
     local cT, cC = NS.Stats:GetCharacterTotal(), NS.Stats:GetCharacterPickpocketCount()
     local cA = cC > 0 and (cT / cC) or 0
-    charSummary:SetText(string.format(
+    charSummary:SetText(string_format(
       "This Character:\n%s (%d pickpockets)\nAvg: %s",
       NS.Utils:FormatMoney(cT), cC, NS.Utils:FormatMoney(cA)))
 
     local aT, aC = NS.Stats:GetAccountTotal(), NS.Stats:GetAccountPickpocketCount()
     local aA = aC > 0 and (aT / aC) or 0
-    accSummary:SetText(string.format(
+    accSummary:SetText(string_format(
       "Account-Wide:\n%s (%d pickpockets)\nAvg: %s",
       NS.Utils:FormatMoney(aT), aC, NS.Utils:FormatMoney(aA)))
 
@@ -700,11 +732,7 @@ function NS.Options:CreateBottomPanel()
   self.updateBottomStats = UpdateBottomStats
 
   -- Right: reset buttons
-  local rTitle = bp:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  rTitle:SetPoint("TOPRIGHT", -12, -8)
-  rTitle:SetText("Reset"); rTitle:SetTextColor(1, 0.82, 0)
-
-  MakeResetBtn(bp, "Reset Session", -28,
+  MakeResetBtn(bp, "Reset Session", -10,
     { {"Clears current session data.", 0.7, 0.7, 0.7}, {"Lifetime stats preserved.", 0.5, 1, 0.5} },
     function()
       if NS.Tracking then NS.Tracking:ResetSession() end
@@ -715,11 +743,11 @@ function NS.Options:CreateBottomPanel()
       NS.Utils:PrintWarning("Session reset")
     end)
 
-  MakeResetBtn(bp, "Reset Character", -58,
+  MakeResetBtn(bp, "Reset Character", -40,
     { {"Clears THIS character's lifetime stats.", 1, 0.5, 0}, {"Requires confirmation.", 1, 0.3, 0.3} },
     function() StaticPopup_Show("PPT_CONFIRM_RESET_CHARACTER") end)
 
-  MakeResetBtn(bp, "Reset Account", -88,
+  MakeResetBtn(bp, "Reset Account", -70,
     { {"Clears ALL characters' stats!", 1, 0, 0}, {"Requires confirmation.", 1, 0.3, 0.3} },
     function() StaticPopup_Show("PPT_CONFIRM_RESET_ACCOUNT") end)
 
@@ -773,6 +801,8 @@ end
 --------------------------------------------------------------------------------
 
 function NS.Options:Show()
+  -- Don't open before PLAYER_LOGIN (data layer not ready)
+  if not NS.Data or not NS.Data.db then return end
   if not self.frame then self:Initialize() end
   self.frame:Show()
 end
@@ -782,6 +812,8 @@ function NS.Options:Hide()
 end
 
 function NS.Options:Toggle()
+  -- Don't open before PLAYER_LOGIN (data layer not ready)
+  if not NS.Data or not NS.Data.db then return end
   if not self.frame then
     self:Initialize()
     self.frame:Show()

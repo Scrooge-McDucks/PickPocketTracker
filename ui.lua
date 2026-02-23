@@ -48,7 +48,7 @@ function NS.UI:CreateMainWindow()
   end
 
   local frame = NS.Utils:CreateDisplayBar({
-    name         = "PickPocketTrackerMainFrame",
+    name         = nil,
     width        = width,
     height       = height,
     iconTexture  = tex,

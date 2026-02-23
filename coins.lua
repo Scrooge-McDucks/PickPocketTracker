@@ -16,6 +16,7 @@ NS.Coins = {}
 local C_CurrencyInfo = C_CurrencyInfo
 local CURRENCY_ID    = NS.Config.COINS_OF_AIR_ID
 local ICON_PATH      = NS.Config.COINS_OF_AIR_ICON
+local string_format  = string.format
 
 -- Session state
 NS.Coins.sessionCount = 0
@@ -59,7 +60,7 @@ function NS.Coins:OnCurrencyChanged()
   if NS.Stats then NS.Stats:RecordCoinsOfAir(delta) end
 
   if NS.Data:ShouldChatLogItems() then
-    NS.Utils:PrintSuccess(string.format("Pickpocketed: %d Coin%s of Air",
+    NS.Utils:PrintSuccess(string_format("Pickpocketed: %d Coin%s of Air",
       delta, delta > 1 and "s" or ""))
   end
 
@@ -89,7 +90,7 @@ function NS.Coins:CreateWindow()
   local w, h = NS.Data:GetCoinWindowSize()
 
   local f = NS.Utils:CreateDisplayBar({
-    name        = "PickPocketTrackerCoinFrame",
+    name        = nil,
     width       = w,
     height      = h,
     iconTexture = ICON_PATH,
@@ -142,17 +143,17 @@ end
 
 function NS.Coins:UpdateDisplay()
   if not self.frame then return end
-  if not NS.Data:ShouldTrackCoins() then
+  if not NS.Data:ShouldTrackCoins() or NS.Data:IsCoinWindowHidden() then
     self.frame:Hide()
     return
   end
 
-  self.frame.text:SetText(string.format("Coins of Air: %d", self.sessionCount))
+  self.frame.text:SetText(string_format("Coins of Air: %d", self.sessionCount))
   self.frame:Show()
 end
 
 function NS.Coins:UpdateVisibility()
-  if not NS.Data:ShouldTrackCoins() then
+  if not NS.Data:ShouldTrackCoins() or NS.Data:IsCoinWindowHidden() then
     if self.frame then self.frame:Hide() end
     return
   end

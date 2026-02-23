@@ -7,6 +7,9 @@ local _, NS = ...
 
 NS.Commands = {}
 
+local string_format = string.format
+local tonumber      = tonumber
+
 function NS.Commands:Register()
   SLASH_PICKPOCKETTRACKER1 = "/pp"
 
@@ -94,11 +97,12 @@ function NS.Commands:HandleHelp()
   NS.Utils:Print(nil, "  /pp lock - Lock window (prevent resize)")
   NS.Utils:Print(nil, "  /pp unlock - Unlock window (allow resize)")
   NS.Utils:Print(nil, "  /pp icon on|off - Show/hide icon")
-  NS.Utils:Print(nil, "  /pp minimap on|off|reset - Minimap button")
+  NS.Utils:Print(nil, "  /pp minimap on|off|reset - Standalone minimap button")
   NS.Utils:Print(nil, "  /pp window <seconds> - Detection window (0.1-10)")
   NS.Utils:Print(nil, "  /pp coins - Toggle Coins of Air tracking")
   NS.Utils:Print(nil, "  /pp coins on|off - Enable/disable tracking")
   NS.Utils:Print(nil, "  /pp coins icon on|off - Show/hide coin icon")
+  NS.Utils:Print(nil, "  /pp coins window show|hide - Show/hide coin window")
   NS.Utils:Print(nil, "  /pp coins reset - Reset coin session count")
   NS.Utils:Print(nil, "  /pp autosell - Toggle auto-sell fence items")
   NS.Utils:Print(nil, "  /pp autosell on|off - Enable/disable auto-sell")
@@ -130,11 +134,11 @@ function NS.Commands:HandleAccount()
     if PickPocketTrackerAccountDB then
       NS.Utils:PrintInfo("Account stats (raw):")
       local db = PickPocketTrackerAccountDB
-      NS.Utils:PrintInfo(string.format("  Total gold: %s",
+      NS.Utils:PrintInfo(string_format("  Total gold: %s",
         NS.Utils:FormatMoney(db.totalGold or 0)))
-      NS.Utils:PrintInfo(string.format("  Total items sold: %s",
+      NS.Utils:PrintInfo(string_format("  Total items sold: %s",
         NS.Utils:FormatMoney(db.totalItemsSold or 0)))
-      NS.Utils:PrintInfo(string.format("  Total pickpockets: %d",
+      NS.Utils:PrintInfo(string_format("  Total pickpockets: %d",
         db.totalPickpockets or 0))
     else
       NS.Utils:PrintInfo("No account data yet. Play a Rogue first!")
@@ -237,9 +241,9 @@ function NS.Commands:HandleWindowCommand(msg)
   end
 
   if NS.Tracking:SetDetectionWindow(seconds) then
-    NS.Utils:PrintWarning(string.format("Detection window set to %.1fs", seconds))
+    NS.Utils:PrintWarning(string_format("Detection window set to %.1fs", seconds))
   else
-    NS.Utils:PrintError(string.format("Window must be between %.1f and %.1f seconds",
+    NS.Utils:PrintError(string_format("Window must be between %.1f and %.1f seconds",
       NS.Config.MIN_WINDOW_SECONDS, NS.Config.MAX_WINDOW_SECONDS))
   end
 end
@@ -276,11 +280,19 @@ function NS.Commands:HandleCoinsCommand(msg)
     NS.Data:SetTrackCoins(false)
     if NS.Coins then NS.Coins:UpdateVisibility() end
     NS.Utils:PrintWarning("Coins of Air tracking disabled")
+  elseif subCmd == "window show" then
+    NS.Data:SetCoinWindowHidden(false)
+    if NS.Coins then NS.Coins:UpdateVisibility() end
+    NS.Utils:PrintWarning("Coins of Air window shown")
+  elseif subCmd == "window hide" then
+    NS.Data:SetCoinWindowHidden(true)
+    if NS.Coins then NS.Coins:UpdateVisibility() end
+    NS.Utils:PrintWarning("Coins of Air window hidden")
   elseif subCmd == "reset" then
     if NS.Coins then NS.Coins:ResetSession() end
     NS.Utils:PrintWarning("Coins of Air session reset")
   else
-    NS.Utils:PrintError("Usage: /pp coins [on|off|icon on|off|reset]")
+    NS.Utils:PrintError("Usage: /pp coins [on|off|icon on|off|window show|hide|reset]")
   end
 end
 

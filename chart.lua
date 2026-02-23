@@ -21,6 +21,13 @@ local _, NS = ...
 
 NS.Chart = {}
 
+local math_max  = math.max
+local math_abs  = math.abs
+local pairs     = pairs
+local ipairs    = ipairs
+local table_sort = table.sort
+local string_format = string.format
+
 -------------------------------------------------------------------------------
 -- Group data into top-X + optional "Other Characters"
 -------------------------------------------------------------------------------
@@ -31,7 +38,7 @@ local function GroupData(data, maxBars)
   -- Copy and sort descending
   local sorted = {}
   for i = 1, #data do sorted[i] = data[i] end
-  table.sort(sorted, function(a, b) return a.value > b.value end)
+  table_sort(sorted, function(a, b) return a.value > b.value end)
 
   if #sorted <= maxBars then
     return sorted
@@ -52,7 +59,7 @@ local function GroupData(data, maxBars)
 
   if otherCount > 0 then
     result[#result + 1] = {
-      name    = string.format("Other Characters (%d)", otherCount),
+      name    = string_format("Other Characters (%d)", otherCount),
       value   = otherTotal,
       extra   = nil,
       isOther = true,
@@ -124,7 +131,7 @@ function NS.Chart:Render(holder, config)
     barBg:SetColorTexture(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
 
     -- Filled bar (proportional to max)
-    local fillWidth = math.max(2, (entry.value / maxVal) * barW)
+    local fillWidth = math_max(2, (entry.value / maxVal) * barW)
     local bar = holder:CreateTexture(nil, "ARTWORK")
     bar:SetPoint("TOPLEFT", 0, y)
     bar:SetSize(fillWidth, barH)
@@ -159,7 +166,7 @@ function NS.Chart:Render(holder, config)
     y = y - (barH + spacing)
   end
 
-  local totalHeight = math.abs(y) + 5
+  local totalHeight = math_abs(y) + 5
   holder:SetHeight(totalHeight)
   return totalHeight
 end
