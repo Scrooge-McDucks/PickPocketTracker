@@ -9,7 +9,7 @@ NS.Config = {}
 
 -- Addon metadata
 NS.Config.ADDON_NAME = NS.name or "PickPocketTracker"
-NS.Config.VERSION = "1.5.1"
+NS.Config.VERSION = "1.7.0"
 
 -- Pick Pocket spell ID (unchanged since Classic)
 NS.Config.PICK_POCKET_SPELL_ID = 921

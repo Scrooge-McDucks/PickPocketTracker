@@ -141,9 +141,16 @@ function NS.Coins:OnIconSettingChanged()
   self.frame:SetIconVisible(NS.Data:ShouldShowCoinIcon())
 end
 
+local function ShouldHideCoinWindow()
+  if not NS.Data:ShouldTrackCoins() or NS.Data:IsCoinWindowHidden() then
+    return true
+  end
+  return NS.Events and NS.Events:ShouldHideForCombat()
+end
+
 function NS.Coins:UpdateDisplay()
   if not self.frame then return end
-  if not NS.Data:ShouldTrackCoins() or NS.Data:IsCoinWindowHidden() then
+  if ShouldHideCoinWindow() then
     self.frame:Hide()
     return
   end
@@ -153,7 +160,7 @@ function NS.Coins:UpdateDisplay()
 end
 
 function NS.Coins:UpdateVisibility()
-  if not NS.Data:ShouldTrackCoins() or NS.Data:IsCoinWindowHidden() then
+  if ShouldHideCoinWindow() then
     if self.frame then self.frame:Hide() end
     return
   end

@@ -240,6 +240,14 @@ function NS.Options:PopulateSettings(content)
       function() return NS.Data:ShouldAutoSell() end,
       function(v) NS.Data:SetAutoSell(v) end },
 
+    { "Hide Windows in Combat", "Hide the haul and Coins of Air windows while you are in combat",
+      function() return NS.Data:ShouldHideInCombat() end,
+      function(v)
+        NS.Data:SetHideInCombat(v)
+        NS.UI:UpdateVisibility()
+        if NS.Coins then NS.Coins:UpdateVisibility() end
+      end },
+
     { "Show Character Graphs", "Show bar graphs comparing earnings and coins across all your rogue characters",
       function() return NS.Data:ShouldShowBarGraph() end,
       function(v)

@@ -166,7 +166,8 @@ end
 
 function NS.UI:UpdateVisibility()
   if not self.mainFrame then return end
-  if NS.Data:IsHidden() then self.mainFrame:Hide() else self.mainFrame:Show() end
+  local hide = NS.Data:IsHidden() or (NS.Events and NS.Events:ShouldHideForCombat())
+  if hide then self.mainFrame:Hide() else self.mainFrame:Show() end
 end
 
 function NS.UI:OnIconSettingChanged()

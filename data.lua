@@ -53,6 +53,7 @@ function NS.Data:InitializeUI()
     showBarGraph    = d.showBarGraph,
     trackCoins      = false,
     coinWindowHidden = false,
+    hideInCombat    = true,
     autoSell        = NS.Config.AUTOSELL_DEFAULTS.enabled,
     point           = d.point,
     relativePoint   = d.relativePoint,
@@ -122,6 +123,10 @@ function NS.Data:SetCoinWindowHidden(v) self.db.coinWindowHidden = v end
 -- Auto-sell fence items
 function NS.Data:ShouldAutoSell()    return self.db.autoSell end
 function NS.Data:SetAutoSell(v)      self.db.autoSell = v end
+
+-- Hide tracking windows while in combat
+function NS.Data:ShouldHideInCombat() return self.db.hideInCombat end
+function NS.Data:SetHideInCombat(v)   self.db.hideInCombat = v end
 
 -- Max chart bars (per-graph, independent values)
 function NS.Data:GetMaxGoldBars()

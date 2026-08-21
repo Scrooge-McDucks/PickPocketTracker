@@ -10,12 +10,19 @@
 local _, NS = ...
 
 NS.Events = {}
+NS.Events.inCombat = false
 
 local CreateFrame     = CreateFrame
 local UnitGUID        = UnitGUID
+local UnitAffectingCombat = UnitAffectingCombat
 local string_format   = string.format
 
 local eventFrame = CreateFrame("Frame")
+
+--- True when combat visibility rules should hide tracking windows right now.
+function NS.Events:ShouldHideForCombat()
+  return self.inCombat and NS.Data and NS.Data:ShouldHideInCombat()
+end
 
 function NS.Events:Register()
   -- Always register PLAYER_LOGIN so we can check class and init account DB
@@ -45,6 +52,8 @@ local function RegisterTrackingEvents()
   eventFrame:RegisterEvent("MERCHANT_SHOW")
   eventFrame:RegisterEvent("MERCHANT_CLOSED")
   eventFrame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
+  eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+  eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 end
 
 -------------------------------------------------------------------------------
@@ -69,6 +78,9 @@ handlers.PLAYER_LOGIN = function()
 
   -- Rogue: full initialization
   RegisterTrackingEvents()
+
+  -- Seed combat state in case we log in while already in combat
+  NS.Events.inCombat = UnitAffectingCombat and UnitAffectingCombat("player") and true or false
 
   NS.Tracking:Initialize()
   -- Items:Initialize clears session items (consistent with sessionGold reset)
@@ -154,4 +166,23 @@ handlers.CURRENCY_DISPLAY_UPDATE = function()
   if NS.Coins and NS.Data:ShouldTrackCoins() then
     NS.Coins:OnCurrencyChanged()
   end
+end
+
+-------------------------------------------------------------------------------
+-- Combat state — hide tracking windows if the user opted in
+-------------------------------------------------------------------------------
+
+local function ApplyCombatVisibility()
+  if NS.UI    then NS.UI:UpdateVisibility() end
+  if NS.Coins then NS.Coins:UpdateVisibility() end
+end
+
+handlers.PLAYER_REGEN_DISABLED = function()
+  NS.Events.inCombat = true
+  ApplyCombatVisibility()
+end
+
+handlers.PLAYER_REGEN_ENABLED = function()
+  NS.Events.inCombat = false
+  ApplyCombatVisibility()
 end
