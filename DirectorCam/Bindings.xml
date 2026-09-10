@@ -1,0 +1,33 @@
+<Bindings>
+    <Binding name="DIRECTORCAM_ORBIT_TOGGLE" category="DirectorCam">
+        DirectorCam_ToggleOrbit()
+    </Binding>
+
+    <Binding name="DIRECTORCAM_STOP_ALL" category="DirectorCam">
+        DirectorCam_StopAll()
+    </Binding>
+
+    <Binding name="DIRECTORCAM_MARK_EYELEVEL" category="DirectorCam">
+        DirectorCam_MarkEyeLevel()
+    </Binding>
+
+    <Binding name="DIRECTORCAM_ANGLE_LOW" category="DirectorCam">
+        DirectorCam_AngleLow()
+    </Binding>
+
+    <Binding name="DIRECTORCAM_ANGLE_EYE" category="DirectorCam">
+        DirectorCam_AngleEye()
+    </Binding>
+
+    <Binding name="DIRECTORCAM_ANGLE_HIGH" category="DirectorCam">
+        DirectorCam_AngleHigh()
+    </Binding>
+
+    <Binding name="DIRECTORCAM_LENS_NEXT" category="DirectorCam">
+        DirectorCam_LensNext()
+    </Binding>
+
+    <Binding name="DIRECTORCAM_LENS_PREV" category="DirectorCam">
+        DirectorCam_LensPrev()
+    </Binding>
+</Bindings>
