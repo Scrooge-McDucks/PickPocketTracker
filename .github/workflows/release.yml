@@ -6,7 +6,13 @@ on:
       - "v*"
 
 jobs:
+  # Gate publishing on the test suite so a tag can never ship a broken build.
+  # Drop this job and the `needs:` line below to publish without testing.
+  test:
+    uses: ./.github/workflows/tests.yml
+
   release:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

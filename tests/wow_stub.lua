@@ -24,6 +24,12 @@ local H = {}
 
 H.out = print   -- keep the real print before the addon's chat output hijacks it
 
+-- Lua 5.1/LuaJIT expose a global `unpack`; 5.2+ moved it to `table.unpack`.
+-- The bundled interpreter depends on which lupa wheel is installed, so accept
+-- either and hand the addon the global it expects (WoW's Lua 5.1 has one).
+local tunpack = table.unpack or unpack
+H.unpack = tunpack
+
 -------------------------------------------------------------------------------
 -- Assertions
 -------------------------------------------------------------------------------
@@ -251,8 +257,8 @@ local function mockFrame(frameType, name, parent, template)
   function f:SetChecked(v) self.__checked = v and true or false end
   function f:GetChecked() return self.__checked end
 
-  function f:GetChildren() return table.unpack(self.__children) end
-  function f:GetRegions() return table.unpack(self.__regions) end
+  function f:GetChildren() return tunpack(self.__children) end
+  function f:GetRegions() return tunpack(self.__regions) end
 
   function f:CreateFontString(n, layer, tmpl)
     local fs = mockFrame("FontString", n, self, tmpl)
@@ -301,7 +307,7 @@ H.mockFrame = mockFrame
 -------------------------------------------------------------------------------
 
 NUM_BAG_SLOTS = 4
-unpack = table.unpack      -- WoW's Lua 5.1 exposes this as a global
+unpack = tunpack           -- WoW's Lua 5.1 exposes this as a global
 time   = os.time
 date   = os.date
 

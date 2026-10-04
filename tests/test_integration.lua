@@ -11,10 +11,11 @@ local H = dofile(TESTS_DIR .. "/wow_stub.lua")
 
 local FILES = H.tocFiles()
 local NS
+local unpack = H.unpack
 
 --- Fire an event through the addon's own router, with args at real positions.
 local function fire(event, args, n)
-  NS.Events:OnEvent(event, table.unpack(args or {}, 1, n or 0))
+  NS.Events:OnEvent(event, unpack(args or {}, 1, n or 0))
 end
 
 local function login(classToken)
