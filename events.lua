@@ -138,7 +138,9 @@ handlers.CHAT_MSG_LOOT = function(_, msg, _, _, _, _, _, _, _, _, _, _, senderGU
   if not itemLink then return end
 
   itemLink = "|H" .. itemLink .. "|h"
-  local quantity = tonumber(msg:match("x(%d+)%s*$")) or 1
+  -- Tolerate the sentence-ending period in LOOT_ITEM_SELF_MULTIPLE
+  -- ("You receive loot: [Item]x3.") as well as a bare "...x3".
+  local quantity = tonumber(msg:match("x(%d+)[%s%.]*$")) or 1
 
   NS.Items:OnLootReceived(itemLink, quantity)
 end
