@@ -1,0 +1,10 @@
+# BigWigsMods/packager configuration (see .github/workflows/release.yml)
+#
+# The packager ships every tracked file that is not dot-prefixed, so anything
+# added here that is development-only must be listed under "ignore" or it ends
+# up inside the released addon zip.
+
+package-as: PickPocketTracker
+
+ignore:
+  - tests
