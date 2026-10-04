@@ -17,6 +17,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history and all tags. The packager derives the version from
+          # `git describe --tags`, finds the previous tag via `HEAD~`, and builds
+          # the changelog from `git log <previous tag>..<tag>`. On the default
+          # shallow clone HEAD~ does not exist, so there is no previous tag, the
+          # changelog collapses to the single tagged commit, and the revision
+          # count from `git rev-list --count` is 1 instead of the real total.
+          fetch-depth: 0
 
       - name: Package and release
         uses: BigWigsMods/packager@v2
