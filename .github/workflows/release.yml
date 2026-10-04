@@ -14,6 +14,12 @@ jobs:
   release:
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      # The packager creates (or updates) a GitHub Release for the tag and
+      # uploads the zip as a release asset, so the automatic GITHUB_TOKEN needs
+      # write access to repository contents. Declared explicitly because repos
+      # default workflow tokens to read-only.
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,3 +36,7 @@ jobs:
         uses: BigWigsMods/packager@v2
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          # Enables the GitHub Release, which also restores the "Previous
+          # Releases" link in the generated changelog. GITHUB_TOKEN is provided
+          # by Actions automatically - there is no secret to configure.
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}

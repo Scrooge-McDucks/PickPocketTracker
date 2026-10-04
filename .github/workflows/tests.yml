@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_call:        # lets release.yml require this before publishing
 
+permissions:
+  contents: read    # the suite only needs to check the repo out
+
 jobs:
   test:
     name: Lua test suite
