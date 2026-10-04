@@ -15,6 +15,9 @@
 --
 -- Auto-sell: when enabled, opens a queue/ticker that sells fence items one
 -- at a time, with graceful handling of items already sold by other addons.
+-- Every tick re-confirms the vendor window is open (outside it the sell call
+-- would *use* the item) and verifies the previous attempt actually left the
+-- bags, so a refused sell retries and then reports instead of failing quietly.
 --
 -- Session lifecycle: Initialize() clears items so every login/reload starts
 -- a fresh session, matching the behaviour of session gold in tracking.lua.
@@ -35,11 +38,15 @@ NS.Items.vendorSnapshot     = nil
 NS.Items.sessionVendorValue = 0
 NS.Items.autoSellTicker     = nil
 NS.Items.autoSellPending    = nil  -- { [itemID] = count sold so far this vendor session }
+NS.Items.autoSellLast       = nil  -- last sell attempt, confirmed on the next tick
+NS.Items.autoSellStalls     = 0    -- consecutive ticks where a sell did nothing
 
 function NS.Items:Initialize()
   self.vendorSnapshot     = nil
   self.sessionVendorValue = 0
   self.autoSellPending    = nil
+  self.autoSellLast       = nil
+  self.autoSellStalls     = 0
   -- BUG FIX: clear session items on login/reload so both session gold and
   -- session items start fresh together.  Previously items persisted across
   -- reloads via SavedVariables while session gold did not.
@@ -181,13 +188,63 @@ end
 -- Each tick re-scans bags to gracefully skip items already sold.
 -------------------------------------------------------------------------------
 
+--- True only while the vendor window is actually open.  This guard matters:
+--- away from a merchant, C_Container.UseContainerItem *uses* the item rather
+--- than selling it, which would irreversibly consume pickpocketed loot.
+local function MerchantIsOpen()
+  return MerchantFrame ~= nil and MerchantFrame:IsShown()
+end
+
+--- Undo the optimistic pending increment for an attempt that never landed, so
+--- the retry isn't blocked by our own bookkeeping.
+function NS.Items:RollbackPending(itemID, count)
+  local pending = self.autoSellPending
+  if not pending or not pending[itemID] then return end
+  pending[itemID] = pending[itemID] - count
+  if pending[itemID] <= 0 then pending[itemID] = nil end
+end
+
 function NS.Items:StartAutoSell()
   if self.autoSellTicker then return end  -- already running
   if not NS.Data:ShouldAutoSell() then return end
 
-  local interval = NS.Config.AUTOSELL_DEFAULTS.tickInterval
+  local interval  = NS.Config.AUTOSELL_DEFAULTS.tickInterval
+  local maxStalls = NS.Config.AUTOSELL_DEFAULTS.maxStalls
+
+  self.autoSellLast   = nil
+  self.autoSellStalls = 0
 
   self.autoSellTicker = C_Timer.NewTicker(interval, function()
+    -- Never touch a bag slot once the vendor window is gone.  MERCHANT_CLOSED
+    -- normally stops the ticker first, but an irreversible action must not
+    -- depend on event ordering.
+    if not MerchantIsOpen() then
+      self:StopAutoSell()
+      return
+    end
+
+    -- Confirm the previous attempt actually left the bags.  An untouched slot
+    -- means the sell call did nothing (item locked, or the API restricted) —
+    -- retry a few times, then stop and say so instead of failing silently.
+    local last = self.autoSellLast
+    if last then
+      local prev = C_Container.GetContainerItemInfo(last.bag, last.slot)
+      if prev and prev.itemID == last.itemID and (prev.stackCount or 1) == last.stackCount then
+        self:RollbackPending(last.itemID, last.stackCount)
+        self.autoSellStalls = self.autoSellStalls + 1
+        if self.autoSellStalls >= maxStalls then
+          self:StopAutoSell()
+          NS.Utils:PrintWarning(
+            "Auto-sell stopped — the vendor isn't accepting sell requests. "
+            .. "Sell manually; tracking is unaffected.")
+          return
+        end
+      else
+        self.autoSellStalls = 0
+      end
+      self.autoSellLast = nil
+    end
+
     local bag, slot, itemID = self:FindNextFenceSlot()
     if not bag then
       self:StopAutoSell()
@@ -196,11 +253,17 @@ function NS.Items:StartAutoSell()
     -- Re-check the slot (another addon may have sold it between find and sell)
     local info = C_Container.GetContainerItemInfo(bag, slot)
     if not info or info.itemID ~= itemID then return end
+
     -- Track how many of this item we've queued for sale this vendor session
     -- so we never sell more than the tracked pickpocket quantity.
+    local stackCount = info.stackCount or 1
     local pending = self.autoSellPending or {}
-    pending[itemID] = (pending[itemID] or 0) + (info.stackCount or 1)
+    pending[itemID] = (pending[itemID] or 0) + stackCount
     self.autoSellPending = pending
+
+    -- Remember the attempt so the next tick can verify it landed.
+    self.autoSellLast = { bag = bag, slot = slot, itemID = itemID, stackCount = stackCount }
+
     C_Container.UseContainerItem(bag, slot)
   end)
 end
@@ -210,6 +273,8 @@ function NS.Items:StopAutoSell()
     self.autoSellTicker:Cancel()
     self.autoSellTicker = nil
   end
+  self.autoSellLast   = nil
+  self.autoSellStalls = 0
 end
 
 --- Find the next bag slot containing a tracked fence item that we haven't

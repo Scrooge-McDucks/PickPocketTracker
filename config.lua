@@ -128,6 +128,10 @@ NS.Config.COINS_OF_AIR_ICON = "Interface/Icons/ability_monk_pathofmists"
 NS.Config.AUTOSELL_DEFAULTS = {
   enabled      = true,
   tickInterval = 0.2,  -- seconds between each sell action
+  -- Consecutive ticks where a sell request visibly did nothing before we give
+  -- up and tell the player. Covers a locked item as well as the API being
+  -- restricted outright by a patch.
+  maxStalls    = 5,
 }
 
 -- Shared bar chart defaults (used by chart.lua)
