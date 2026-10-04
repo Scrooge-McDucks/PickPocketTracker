@@ -8,3 +8,8 @@ package-as: PickPocketTracker
 
 ignore:
   - tests
+  # Project artwork for the CurseForge page, not an addon texture: the WoW
+  # client only loads BLP and TGA, so this 1024x1024 PNG cannot be used in
+  # game and nothing in the TOC or Lua references it. It was 90% of the
+  # download size.
+  - assets

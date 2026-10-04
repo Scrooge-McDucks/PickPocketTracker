@@ -22,7 +22,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Full history and all tags. The packager derives the version from
           # `git describe --tags`, finds the previous tag via `HEAD~`, and builds
