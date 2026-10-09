@@ -13,3 +13,9 @@ ignore:
   # game and nothing in the TOC or Lua references it. It was 90% of the
   # download size.
   - assets
+
+# Release notes for CurseForge and the GitHub Release come from this file
+# instead of the commit log. Update it in each version-bump commit.
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
