@@ -44,6 +44,28 @@ H.eq("version matches the TOC",
     end
   end)())
 
+H.section("the TOC Interface line is a comma-separated list")
+-- The packager and the client split this list on commas. Space-separated
+-- numbers were read as one garbage version, so CurseForge fell back to the
+-- latest retail build and never tagged the other flavors.
+local interface
+for line in io.lines(ADDON_DIR .. "/PickPocketTracker.toc") do
+  interface = interface or line:match("^##%s*Interface:%s*(.-)%s*$")
+end
+H.check("Interface line present", interface ~= nil)
+local versions = {}
+for item in (interface or ""):gmatch("[^,]+") do
+  versions[#versions + 1] = item:match("^%s*(.-)%s*$")
+end
+local allNumeric = #versions > 0
+for _, v in ipairs(versions) do
+  if not v:match("^%d+$") then allNumeric = false end
+end
+H.check("every entry is a single number", allNumeric)
+local hasForever = false
+for _, v in ipairs(versions) do if v == "16001" then hasForever = true end end
+H.check("WoW Forever (16001) listed", hasForever)
+
 H.section("loading registers the slash command and the login event")
 H.check("/pp registered", SLASH_PICKPOCKETTRACKER1 == "/pp")
 H.check("handler installed", type(SlashCmdList["PICKPOCKETTRACKER"]) == "function")
