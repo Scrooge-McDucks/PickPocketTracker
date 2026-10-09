@@ -23,7 +23,6 @@ NS.Chart = {}
 
 local math_max  = math.max
 local math_abs  = math.abs
-local pairs     = pairs
 local ipairs    = ipairs
 local table_sort = table.sort
 local string_format = string.format
@@ -70,29 +69,97 @@ local function GroupData(data, maxBars)
 end
 
 -------------------------------------------------------------------------------
+-- Bar pool
+--
+-- WoW never frees frames, textures or font strings, so the renderer creates
+-- each bar's widgets once per holder and reuses them on every later render.
+-- Bars beyond the current data are hidden, not destroyed; the pool only grows
+-- to the largest bar count ever shown in that holder.
+-------------------------------------------------------------------------------
+
+local function HitOnEnter(self)
+  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+  self.builder(self.entry, self)
+  GameTooltip:Show()
+end
+
+local function HitOnLeave()
+  GameTooltip:Hide()
+end
+
+local function AcquireBar(holder, i)
+  local pool = holder.pptBars
+  if not pool then
+    pool = {}
+    holder.pptBars = pool
+  end
+
+  local b = pool[i]
+  if b then return b end
+
+  b = {
+    label = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"),
+    bg    = holder:CreateTexture(nil, "BACKGROUND"),
+    fill  = holder:CreateTexture(nil, "ARTWORK"),
+    value = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall"),
+    hit   = CreateFrame("Frame", nil, holder),
+  }
+  b.label:SetJustifyH("LEFT")
+  b.value:SetPoint("LEFT", b.bg, "LEFT", 6, 0)
+  b.value:SetTextColor(1, 1, 1)
+  b.hit:SetScript("OnEnter", HitOnEnter)
+  b.hit:SetScript("OnLeave", HitOnLeave)
+
+  pool[i] = b
+  return b
+end
+
+local function SetBarShown(b, shown)
+  b.label:SetShown(shown)
+  b.bg:SetShown(shown)
+  b.fill:SetShown(shown)
+  b.value:SetShown(shown)
+  b.hit:SetShown(shown)
+end
+
+local function GetNoDataText(holder)
+  local fs = holder.pptNoData
+  if not fs then
+    fs = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    fs:SetPoint("TOPLEFT", 0, 0)
+    fs:SetTextColor(0.7, 0.7, 0.7)
+    holder.pptNoData = fs
+  end
+  return fs
+end
+
+-------------------------------------------------------------------------------
 -- Render bars into a holder frame
 --
--- Clears all previous children/regions of the holder, then draws bars.
+-- Reuses the holder's pooled bars, hiding any the data no longer needs.
 -- Returns the total height consumed so the caller can resize the holder.
 -------------------------------------------------------------------------------
 
 function NS.Chart:Render(holder, config)
-  -- Clear previous content
-  for _, child in pairs({ holder:GetChildren() }) do child:Hide() end
-  for _, region in pairs({ holder:GetRegions() }) do region:Hide() end
+  local data    = config.data or {}
+  local grouped = #data > 0
+    and GroupData(data, config.maxBars or NS.Config.CHART_DEFAULTS.maxBars)
+    or {}
 
-  local data = config.data or {}
-  if #data == 0 then
-    local noData = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    noData:SetPoint("TOPLEFT", 0, 0)
+  -- Hide pooled bars this render does not use
+  local pool = holder.pptBars
+  if pool then
+    for i = #grouped + 1, #pool do SetBarShown(pool[i], false) end
+  end
+
+  local noData = GetNoDataText(holder)
+  if #grouped == 0 then
     noData:SetText(config.noDataText or "No data yet.")
-    noData:SetTextColor(0.7, 0.7, 0.7)
+    noData:Show()
     holder:SetHeight(20)
     return 20
   end
-
-  local maxBars  = config.maxBars or NS.Config.CHART_DEFAULTS.maxBars
-  local grouped  = GroupData(data, maxBars)
+  noData:Hide()
 
   local barColor = config.barColor or NS.Config.BAR_COLORS.default
   local bgColor  = NS.Config.BAR_COLORS.bg
@@ -101,6 +168,7 @@ function NS.Chart:Render(holder, config)
   local spacing  = NS.Config.CHART_DEFAULTS.barSpacing
   local labelH   = NS.Config.CHART_DEFAULTS.labelHeight
   local formatter = config.formatter or tostring
+  local builder   = config.tooltipBuilder
 
   -- Find max value for proportional sizing
   local maxVal = 0
@@ -111,58 +179,48 @@ function NS.Chart:Render(holder, config)
 
   local y = 0
 
-  for _, entry in ipairs(grouped) do
+  for i, entry in ipairs(grouped) do
+    local b = AcquireBar(holder, i)
+
     -- Character name label (above bar)
-    local label = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    label:SetPoint("TOPLEFT", 0, y)
-    label:SetJustifyH("LEFT")
-    label:SetText(entry.name)
+    b.label:ClearAllPoints()
+    b.label:SetPoint("TOPLEFT", 0, y)
+    b.label:SetText(entry.name)
     if entry.isOther then
-      label:SetTextColor(0.7, 0.7, 0.7)
+      b.label:SetTextColor(0.7, 0.7, 0.7)
     else
-      label:SetTextColor(0.9, 0.9, 0.9)
+      b.label:SetTextColor(0.9, 0.9, 0.9)
     end
     y = y - labelH
 
     -- Bar background (full width)
-    local barBg = holder:CreateTexture(nil, "BACKGROUND")
-    barBg:SetPoint("TOPLEFT", 0, y)
-    barBg:SetSize(barW, barH)
-    barBg:SetColorTexture(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
+    b.bg:ClearAllPoints()
+    b.bg:SetPoint("TOPLEFT", 0, y)
+    b.bg:SetSize(barW, barH)
+    b.bg:SetColorTexture(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
 
     -- Filled bar (proportional to max)
-    local fillWidth = math_max(2, (entry.value / maxVal) * barW)
-    local bar = holder:CreateTexture(nil, "ARTWORK")
-    bar:SetPoint("TOPLEFT", 0, y)
-    bar:SetSize(fillWidth, barH)
+    b.fill:ClearAllPoints()
+    b.fill:SetPoint("TOPLEFT", 0, y)
+    b.fill:SetSize(math_max(2, (entry.value / maxVal) * barW), barH)
     if entry.isOther then
-      bar:SetColorTexture(0.5, 0.5, 0.5, 0.65)
+      b.fill:SetColorTexture(0.5, 0.5, 0.5, 0.65)
     else
-      bar:SetColorTexture(barColor[1], barColor[2], barColor[3], 0.85)
+      b.fill:SetColorTexture(barColor[1], barColor[2], barColor[3], 0.85)
     end
 
-    -- Value label on the bar
-    local valText = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    valText:SetPoint("LEFT", barBg, "LEFT", 6, 0)
-    valText:SetText(formatter(entry.value))
-    valText:SetTextColor(1, 1, 1)
+    -- Value label on the bar (anchored to bg once, in AcquireBar)
+    b.value:SetText(formatter(entry.value))
 
     -- Tooltip hit area covering name + bar
-    local hitFrame = CreateFrame("Frame", nil, holder)
-    hitFrame:SetPoint("TOPLEFT", 0, y + labelH)
-    hitFrame:SetSize(barW, barH + labelH)
-    hitFrame:EnableMouse(true)
+    b.hit:ClearAllPoints()
+    b.hit:SetPoint("TOPLEFT", 0, y + labelH)
+    b.hit:SetSize(barW, barH + labelH)
+    b.hit.entry   = entry
+    b.hit.builder = builder
+    b.hit:EnableMouse(builder ~= nil)
 
-    if config.tooltipBuilder then
-      local tipEntry = entry
-      hitFrame:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        config.tooltipBuilder(tipEntry, self)
-        GameTooltip:Show()
-      end)
-      hitFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    end
-
+    SetBarShown(b, true)
     y = y - (barH + spacing)
   end
 

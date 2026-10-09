@@ -46,7 +46,13 @@ end
 
 --- Register rogue-only tracking events after class check passes.
 local function RegisterTrackingEvents()
-  eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+  -- Pick Pocket is only ever cast by the player, so let the client drop every
+  -- other unit's casts (party, raid, nameplates) before they reach Lua.
+  if eventFrame.RegisterUnitEvent then
+    eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+  else
+    eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+  end
   eventFrame:RegisterEvent("PLAYER_MONEY")
   eventFrame:RegisterEvent("CHAT_MSG_LOOT")
   eventFrame:RegisterEvent("MERCHANT_SHOW")
@@ -131,6 +137,10 @@ end
 -------------------------------------------------------------------------------
 
 handlers.CHAT_MSG_LOOT = function(_, msg, _, _, _, _, _, _, _, _, _, _, senderGUID)
+  -- Cheap time check first: in a group this fires for everyone's loot, and
+  -- almost none of it lands inside a pickpocket window.
+  if not NS.Tracking:IsInDetectionWindow() then return end
+
   local myGUID = UnitGUID("player")
   if senderGUID and myGUID and senderGUID ~= myGUID then return end
 

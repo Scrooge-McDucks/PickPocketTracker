@@ -214,6 +214,11 @@ local function mockFrame(frameType, name, parent, template)
   end
 
   function f:RegisterEvent(ev) self.__events[ev] = true end
+  function f:RegisterUnitEvent(ev, ...)
+    self.__events[ev] = true
+    self.__unitFilters = self.__unitFilters or {}
+    self.__unitFilters[ev] = { ... }
+  end
   function f:UnregisterEvent(ev) self.__events[ev] = nil end
   function f:UnregisterAllEvents() self.__events = {} end
   function f:IsEventRegistered(ev) return self.__events[ev] == true end

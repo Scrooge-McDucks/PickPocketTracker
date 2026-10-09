@@ -83,6 +83,11 @@ for _, ev in ipairs({ "UNIT_SPELLCAST_SUCCEEDED", "CHAT_MSG_LOOT", "MERCHANT_SHO
                       "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }) do
   H.check(ev .. " registered", rogueFrame ~= nil and rogueFrame.__events[ev] == true)
 end
+H.check("spellcasts filtered to the player",
+  rogueFrame ~= nil and rogueFrame.__unitFilters ~= nil
+  and rogueFrame.__unitFilters.UNIT_SPELLCAST_SUCCEEDED ~= nil
+  and rogueFrame.__unitFilters.UNIT_SPELLCAST_SUCCEEDED[1] == "player"
+  and #rogueFrame.__unitFilters.UNIT_SPELLCAST_SUCCEEDED == 1)
 
 H.section("a non-rogue login stays minimal but keeps account stats working")
 login("MAGE")
