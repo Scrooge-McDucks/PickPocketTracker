@@ -87,6 +87,7 @@ function H.resetWorld()
   H.className   = "Rogue"
   H.classToken  = "ROGUE"
   H.inCombat    = false
+  H.tocVersion  = 120105         -- GetBuildInfo() interface; read when config.lua loads
   H.autoRunAfters = true         -- run C_Timer.After callbacks immediately
 end
 
@@ -319,6 +320,7 @@ print = function(...)
 end
 
 GetTime  = function() return H.now end
+GetBuildInfo = function() return "12.0.5", "0", "", H.tocVersion end
 GetMoney = function() return H.money end
 
 GetRealmName = function() return H.realm end

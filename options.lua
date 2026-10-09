@@ -281,6 +281,9 @@ function NS.Options:PopulateSettings(content)
         if v then NS.Options:UpdateCoinGraph() end
       end },
   }
+  if not NS.Config.HAS_COINS_OF_AIR then
+    checks[#checks] = nil  -- drop "Track Coins of Air" (last entry)
+  end
   self.checkboxes = {}
   for _, info in ipairs(checks) do
     local cb = CreateCheckbox(content, info[1], info[2], info[3](), info[4])

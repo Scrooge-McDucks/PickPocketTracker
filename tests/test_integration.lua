@@ -331,4 +331,29 @@ H.eq("lifetime gold preserved", NS.Stats:GetCharacterGold(), 777)
 H.eq("session gold reset", NS.Tracking:GetSessionGold(), 0)
 H.eq("session items reset", NS.Data:GetItemCount(), 0)
 
+H.section("a pre-Legion client (WoW Forever, 16001) has no Coins of Air")
+NS = H.newEnv(FILES)
+local retailBoxes = (function()
+  fire("PLAYER_LOGIN"); NS.Options:Toggle()
+  return #NS.Options.checkboxes
+end)()
+H.tocVersion = 16001
+PickPocketTrackerDB, PickPocketTrackerAccountDB = nil, nil
+NS = H.reload(FILES)
+fire("PLAYER_LOGIN")
+H.check("feature flagged off", NS.Config.HAS_COINS_OF_AIR == false)
+SlashCmdList["PICKPOCKETTRACKER"]("coins on")
+H.check("coins on refused", not NS.Data:ShouldTrackCoins())
+H.check("refusal explained", H.chatHas("not available"))
+NS.Data.db.trackCoins = true    -- e.g. a profile carried over from retail
+H.check("stale saved setting ignored", not NS.Data:ShouldTrackCoins())
+NS.Coins:UpdateVisibility()
+H.check("no coin window", NS.Coins.frame == nil)
+NS.Options:Toggle()
+H.eq("Track Coins of Air checkbox dropped", #NS.Options.checkboxes, retailBoxes - 1)
+H.check("coin section hidden", not NS.Options.coinSection:IsShown())
+H.chat = {}
+SlashCmdList["PICKPOCKETTRACKER"]("help")
+H.check("help omits /pp coins", not H.chatHas("/pp coins"))
+
 H.report()

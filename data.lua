@@ -114,7 +114,9 @@ function NS.Data:SetChatLogItems(v) self.db.chatLogItems = v end
 function NS.Data:SetShowBarGraph(v) self.db.showBarGraph = v end
 function NS.Data:SetTrackCoins(v)   self.db.trackCoins   = v end
 
-function NS.Data:ShouldTrackCoins()    return self.db.trackCoins end
+function NS.Data:ShouldTrackCoins()
+  return NS.Config.HAS_COINS_OF_AIR and self.db.trackCoins
+end
 
 -- Coin window visibility (independent of tracking — you can track without showing)
 function NS.Data:IsCoinWindowHidden()  return self.db.coinWindowHidden end

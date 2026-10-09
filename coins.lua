@@ -28,6 +28,7 @@ NS.Coins.frame        = nil
 -------------------------------------------------------------------------------
 
 local function GetCoinCount()
+  if not NS.Config.HAS_COINS_OF_AIR then return 0 end
   local info = C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo(CURRENCY_ID)
   return info and info.quantity or 0
 end

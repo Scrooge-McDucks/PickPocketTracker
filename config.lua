@@ -120,6 +120,11 @@ NS.Config.COIN_WINDOW_DEFAULTS = {
 -- Coins of Air currency ID (Legion pickpocket currency)
 NS.Config.COINS_OF_AIR_ID = 1416
 
+-- Coins of Air only exist on clients from Legion (interface 70000) onward.
+-- Classic-family clients such as WoW Forever (16001) have no such currency,
+-- so every coin feature is switched off there.
+NS.Config.HAS_COINS_OF_AIR = (select(4, GetBuildInfo())) >= 70000
+
 -- Coins of Air icon — matches the Currency tab display
 -- Texture name: ability_monk_pathofmists  |  File ID: 988196
 NS.Config.COINS_OF_AIR_ICON = "Interface/Icons/ability_monk_pathofmists"

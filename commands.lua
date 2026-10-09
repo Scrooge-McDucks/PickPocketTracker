@@ -99,11 +99,13 @@ function NS.Commands:HandleHelp()
   NS.Utils:Print(nil, "  /pp icon on|off - Show/hide icon")
   NS.Utils:Print(nil, "  /pp minimap on|off|reset - Standalone minimap button")
   NS.Utils:Print(nil, "  /pp window <seconds> - Detection window (0.1-10)")
-  NS.Utils:Print(nil, "  /pp coins - Toggle Coins of Air tracking")
-  NS.Utils:Print(nil, "  /pp coins on|off - Enable/disable tracking")
-  NS.Utils:Print(nil, "  /pp coins icon on|off - Show/hide coin icon")
-  NS.Utils:Print(nil, "  /pp coins window show|hide - Show/hide coin window")
-  NS.Utils:Print(nil, "  /pp coins reset - Reset coin session count")
+  if NS.Config.HAS_COINS_OF_AIR then
+    NS.Utils:Print(nil, "  /pp coins - Toggle Coins of Air tracking")
+    NS.Utils:Print(nil, "  /pp coins on|off - Enable/disable tracking")
+    NS.Utils:Print(nil, "  /pp coins icon on|off - Show/hide coin icon")
+    NS.Utils:Print(nil, "  /pp coins window show|hide - Show/hide coin window")
+    NS.Utils:Print(nil, "  /pp coins reset - Reset coin session count")
+  end
   NS.Utils:Print(nil, "  /pp autosell - Toggle auto-sell fence items")
   NS.Utils:Print(nil, "  /pp autosell on|off - Enable/disable auto-sell")
   NS.Utils:Print(nil, "  /pp help - Show this help")
@@ -249,6 +251,11 @@ function NS.Commands:HandleWindowCommand(msg)
 end
 
 function NS.Commands:HandleCoinsCommand(msg)
+  if not NS.Config.HAS_COINS_OF_AIR then
+    NS.Utils:PrintError("Coins of Air are not available in this version of WoW")
+    return
+  end
+
   local subCmd = msg:match("^coins%s+(.+)$")
 
   if not subCmd then
