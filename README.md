@@ -59,6 +59,7 @@ Log in on a rogue and you're good.
 | `/pp hide` / `show` | Toggle haul window |
 | `/pp lock` / `unlock` | Lock both windows (shift-drag still moves) |
 | `/pp icon on` / `off` | Pickpocket icon in the haul window |
+| `/pp money text` / `icons` | Show money as `5g 20s 30c` text or coin icons |
 | `/pp minimap on` / `off` / `reset` | Standalone minimap button |
 | `/pp window <seconds>` | Detection window, 0.1–10s |
 | `/pp coins` | Toggle Coins of Air tracking |
@@ -73,13 +74,15 @@ Log in on a rogue and you're good.
 
 Open with `/pp`, click the minimap button (left-click), the Addon Compartment entry, or go through Game Menu → AddOns.
 
-**Display** — eight checkboxes:
+**Display** — ten checkboxes:
 - Show Main Window — toggle the haul bar on/off
 - Lock Window Position — prevent dragging and resizing (shift-drag bypasses the lock for repositioning)
 - Show Pickpocket Icon — the ability icon in the haul bar
 - Show Standalone Minimap Button — a separate draggable button around the minimap edge (off by default, the Addon Compartment is always available)
+- Show Money as Text — `5g 20s 30c` instead of coin icons
 - Log Items to Chat — prints pickpocketed/sold item messages
 - Auto-sell Fence Items — automatically sell tracked pickpocket loot at vendors
+- Hide Windows in Combat — hide the haul and Coins of Air windows during combat
 - Show Character Graphs — toggle the earnings and coins bar graphs
 - Track Coins of Air — enable the second tracking window
 

@@ -54,6 +54,7 @@ function NS.Data:InitializeUI()
     trackCoins      = false,
     coinWindowHidden = false,
     hideInCombat    = true,
+    textMoney       = false,
     autoSell        = NS.Config.AUTOSELL_DEFAULTS.enabled,
     point           = d.point,
     relativePoint   = d.relativePoint,
@@ -113,6 +114,10 @@ function NS.Data:SetShowIcon(v)     self.db.showIcon     = v end
 function NS.Data:SetChatLogItems(v) self.db.chatLogItems = v end
 function NS.Data:SetShowBarGraph(v) self.db.showBarGraph = v end
 function NS.Data:SetTrackCoins(v)   self.db.trackCoins   = v end
+
+-- Money as plain "5g 20s 30c" text instead of coin icons
+function NS.Data:ShouldUseTextMoney() return self.db ~= nil and self.db.textMoney == true end
+function NS.Data:SetUseTextMoney(v)   self.db.textMoney = v end
 
 function NS.Data:ShouldTrackCoins()
   return NS.Config.HAS_COINS_OF_AIR and self.db.trackCoins

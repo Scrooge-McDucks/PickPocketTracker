@@ -232,6 +232,14 @@ function NS.Options:PopulateSettings(content)
       function() return not NS.Data:IsMinimapHidden() end,
       function(v) NS.Data:SetMinimapHidden(not v); if NS.Minimap then NS.Minimap:Apply() end end },
 
+    { "Show Money as Text", "Show amounts as 5g 20s 30c instead of coin icons",
+      function() return NS.Data:ShouldUseTextMoney() end,
+      function(v)
+        NS.Data:SetUseTextMoney(v)
+        NS.UI:UpdateDisplay()
+        if NS.Data:ShouldShowBarGraph() then NS.Options:UpdateGoldGraph() end
+      end },
+
     { "Log Items to Chat", "Show pickpocketed/sold item messages in chat",
       function() return NS.Data:ShouldChatLogItems() end,
       function(v) NS.Data:SetChatLogItems(v) end },

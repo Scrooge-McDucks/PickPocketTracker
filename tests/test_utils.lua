@@ -24,6 +24,14 @@ H.check("includes silver 20",      full:find("20|T", 1, true) ~= nil, full)
 H.check("includes copper 30",      full:find("30|T", 1, true) ~= nil, full)
 H.check("zero renders without error", U:FormatMoney(0):find("0|T", 1, true) ~= nil)
 
+H.section("FormatMoney text mode uses g/s/c letters")
+local textMoney = true
+NS.Data = { ShouldUseTextMoney = function() return textMoney end }
+H.eq("text format",      U:FormatMoney(5 * G + 20 * S + 30), "5g 20s 30c")
+H.eq("text zero",        U:FormatMoney(0),                   "0g 0s 0c")
+textMoney = false
+H.check("icons restored", U:FormatMoney(G):find("|T", 1, true) ~= nil)
+
 H.section("TrimString")
 H.eq("both ends",      U:TrimString("  hello  "), "hello")
 H.eq("inner space kept", U:TrimString("  a b  "), "a b")

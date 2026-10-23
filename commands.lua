@@ -61,6 +61,8 @@ function NS.Commands:HandleCommand(msg)
     self:HandleUnlock()
   elseif msg:match("^minimap") then
     self:HandleMinimapCommand(msg)
+  elseif msg:match("^money") then
+    self:HandleMoneyCommand(msg)
   elseif msg:match("^icon") then
     self:HandleIconCommand(msg)
   elseif msg:match("^window") then
@@ -97,6 +99,7 @@ function NS.Commands:HandleHelp()
   NS.Utils:Print(nil, "  /pp lock - Lock window (prevent resize)")
   NS.Utils:Print(nil, "  /pp unlock - Unlock window (allow resize)")
   NS.Utils:Print(nil, "  /pp icon on|off - Show/hide icon")
+  NS.Utils:Print(nil, "  /pp money text|icons - Show money as g/s/c text or coin icons")
   NS.Utils:Print(nil, "  /pp minimap on|off|reset - Standalone minimap button")
   NS.Utils:Print(nil, "  /pp window <seconds> - Detection window (0.1-10)")
   if NS.Config.HAS_COINS_OF_AIR then
@@ -225,6 +228,22 @@ function NS.Commands:HandleIconCommand(msg)
     NS.Utils:PrintWarning("Icon hidden")
   else
     NS.Utils:PrintError("Usage: /pp icon on|off")
+  end
+end
+
+function NS.Commands:HandleMoneyCommand(msg)
+  local subCmd = msg:match("^money%s+(%S+)$")
+
+  if subCmd == "text" then
+    NS.Data:SetUseTextMoney(true)
+    NS.UI:UpdateDisplay()
+    NS.Utils:PrintWarning("Money shown as text")
+  elseif subCmd == "icons" then
+    NS.Data:SetUseTextMoney(false)
+    NS.UI:UpdateDisplay()
+    NS.Utils:PrintWarning("Money shown with coin icons")
+  else
+    NS.Utils:PrintError("Usage: /pp money text|icons")
   end
 end
 

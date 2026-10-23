@@ -58,12 +58,16 @@ local function EnsureMoneyIcons()
   moneyIconsBuilt = true
 end
 
---- Full format with gold/silver/copper icons: "5[G] 20[S] 30[C]"
+--- Full format with gold/silver/copper icons: "5[G] 20[S] 30[C]",
+--- or plain "5g 20s 30c" when the text-money option is on
 function NS.Utils:FormatMoney(copper)
-  EnsureMoneyIcons()
   local gold   = math_floor(copper / 10000)
   local silver = math_floor((copper % 10000) / 100)
   local cop    = copper % 100
+  if NS.Data and NS.Data:ShouldUseTextMoney() then
+    return string_format("%dg %ds %dc", gold, silver, cop)
+  end
+  EnsureMoneyIcons()
   return string_format("%d%s %d%s %d%s", gold, gIcon, silver, sIcon, cop, cIcon)
 end
 
