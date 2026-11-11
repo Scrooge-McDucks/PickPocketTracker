@@ -68,13 +68,15 @@ Log in on a rogue and you're good.
 | `/pp coins reset` | Reset coin session count |
 | `/pp autosell` | Toggle auto-sell fence items |
 | `/pp autosell on` / `off` | Explicit enable/disable |
+| `/pp lockbox` | Toggle counting gold from pickpocketed lockboxes |
+| `/pp lockbox on` / `off` | Explicit enable/disable |
 | `/pp help` | All commands |
 
 ## Options panel
 
 Open with `/pp`, click the minimap button (left-click), the Addon Compartment entry, or go through Game Menu → AddOns.
 
-**Display** — ten checkboxes:
+**Display** — eleven checkboxes:
 - Show Main Window — toggle the haul bar on/off
 - Lock Window Position — prevent dragging and resizing (shift-drag bypasses the lock for repositioning)
 - Show Pickpocket Icon — the ability icon in the haul bar
@@ -82,6 +84,7 @@ Open with `/pp`, click the minimap button (left-click), the Addon Compartment en
 - Show Money as Text — `5g 20s 30c` instead of coin icons
 - Log Items to Chat — prints pickpocketed/sold item messages
 - Auto-sell Fence Items — automatically sell tracked pickpocket loot at vendors
+- Count Lockbox Gold — count gold found inside pickpocketed lockboxes and junkboxes when you open them (on by default)
 - Hide Windows in Combat — hide the haul and Coins of Air windows during combat
 - Show Character Graphs — toggle the earnings and coins bar graphs
 - Track Coins of Air — enable the second tracking window
@@ -118,6 +121,8 @@ Standalone button position is saved between sessions. Use `/pp minimap reset` to
 
 **Items** — same idea but using `CHAT_MSG_LOOT`. When WoW says "You receive loot: [item]" shortly after a pick, the addon attributes it. Items with a vendor sell price > 0 are marked as fence items (eligible for auto-sell and vendor tracking). Items with no vendor price (quest items, etc) are tracked for display but excluded from fence logic.
 
+**Lockboxes** — a junkbox is opened long after the pickpocket, so its gold falls outside the detection window. Every pickpocketed item is remembered per character (across sessions). When you right-click one of them in your bags and a loot window sourced from an item opens within 3 seconds, gold gained until the window closes is counted as pickpocket gold. Turn it off with the "Count Lockbox Gold" checkbox.
+
 **Coins of Air** — `CURRENCY_DISPLAY_UPDATE` fires when any currency changes. If it happens within the detection window and Coins of Air (currency 1416) increased, the delta is recorded.
 
 **Vendor sales** — your bags are snapshotted when you open a merchant. When you close it, anything missing from the tracked items list is assumed sold and the vendor price gets credited. Auto-sell (if enabled) runs a ticker that sells one fence item per tick to avoid conflicts with other addons.
@@ -138,6 +143,8 @@ Items aren't tracked across sessions. If you log out with unsold pickpocketed st
 
 Auto-sell only sells stacks that fit entirely within the tracked pickpocket quantity. If you had 3 of an item from pickpocketing but your bags contain a stack of 10 (from other sources mixed in), that stack is skipped to avoid selling non-pickpocketed items.
 
+Lockbox gold only counts for boxes pickpocketed on this character after v1.11.0, and only when the box is opened by clicking it in your bags — a `/use` macro isn't detected. Items found inside a box aren't tracked, just the gold.
+
 ## Files
 
 ```
@@ -146,6 +153,7 @@ data.lua       SavedVariables access layer
 utils.lua      Formatting, bag scanning, shared display bar factory
 tracking.lua   Gold detection via PLAYER_MONEY
 items.lua      Item detection, fence tracking, vendor sales, auto-sell
+lockbox.lua    Gold from opening pickpocketed lockboxes
 coins.lua      Coins of Air tracking + display window
 stats.lua      Lifetime stats (per-char + account-wide)
 chart.lua      Shared bar chart renderer (gold + coin graphs)

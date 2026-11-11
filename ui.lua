@@ -129,6 +129,7 @@ function NS.UI:UpdateDisplay()
   self.cachedGold   = gold
   self.cachedSold   = sold
   self.cachedUnsold = unsold
+  self.cachedLockbox = NS.Tracking and NS.Tracking:GetSessionLockboxGold() or 0
   self:ScaleTextToFit()
 end
 
@@ -144,6 +145,10 @@ function NS.UI:SetupTooltip(frame)
     local g, s, u = NS.UI.cachedGold, NS.UI.cachedSold, NS.UI.cachedUnsold
     if g > 0 then
       GameTooltip:AddDoubleLine("Gold looted:",   NS.Utils:FormatMoneyCompact(g), 1,1,1, 1,1,1)
+      local box = NS.UI.cachedLockbox or 0
+      if box > 0 then
+        GameTooltip:AddDoubleLine("  from lockboxes:", NS.Utils:FormatMoneyCompact(box), 0.7,0.7,0.7, 0.7,0.7,0.7)
+      end
     end
     if s > 0 then
       GameTooltip:AddDoubleLine("Items sold:",    NS.Utils:FormatMoneyCompact(s), 1,1,1, 1,1,1)

@@ -78,6 +78,7 @@ function H.resetWorld()
   H.frames     = {}              -- every CreateFrame result
   H.tooltip    = {}              -- GameTooltip lines
   H.categories = {}              -- Settings.RegisterAddOnCategory calls
+  H.loot       = {}              -- source GUID per open loot slot
   H.useCalls            = 0
   H.sellBlocked         = false
   H.usedOutsideMerchant = false
@@ -368,6 +369,10 @@ C_Container = {
     if H.sellBlocked then return end
     local e = H.bags[bag] and H.bags[bag][slot]
     if e then
+      -- Away from a vendor, an openable container stays in the bag until its
+      -- loot is taken; the test removes it when the loot window closes.
+      local def = H.itemDB[e.itemID]
+      if not H.merchantOpen and def and def.openable then return end
       -- Selling at a vendor credits the player and empties the slot.
       local it = H.itemDB[e.itemID]
       if H.merchantOpen and it then H.money = H.money + it.price * e.stackCount end
@@ -375,6 +380,26 @@ C_Container = {
     end
   end,
 }
+
+-- Loot window: one source GUID per slot, set by tests via H.loot.
+GetNumLootItems   = function() return #H.loot end
+GetLootSourceInfo = function(slot) return H.loot[slot], 1 end
+
+-- Post-hooks, as the real hooksecurefunc installs them. H.reload() retires
+-- every hook, the way a /reload starts from a fresh Lua state.
+H.secureHooks = {}
+hooksecurefunc = function(a, b, c)
+  local tbl, name, fn = a, b, c
+  if type(a) == "string" then tbl, name, fn = _G, a, b end
+  local orig  = tbl[name]
+  local entry = { fn = fn }
+  H.secureHooks[#H.secureHooks + 1] = entry
+  tbl[name] = function(...)
+    local results = { orig(...) }
+    if not entry.dead then entry.fn(...) end
+    return tunpack(results)
+  end
+end
 
 C_Timer = {
   NewTicker = function(_, fn)
@@ -457,6 +482,8 @@ end
 --- SavedVariables are left alone, so this models a /reload -- or a login on a
 --- different character, once H.playerName has been changed.
 function H.reload(files)
+  for _, hook in ipairs(H.secureHooks) do hook.dead = true end
+  H.secureHooks = {}
   local NS = { name = "PickPocketTracker" }
   for _, name in ipairs(files) do
     local path = ADDON_DIR .. "/" .. name

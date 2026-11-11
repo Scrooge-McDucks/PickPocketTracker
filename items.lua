@@ -118,6 +118,8 @@ function NS.Items:RecordPickpocketedItem(itemID, itemName, itemTexture, quantity
   itemData.quantity   = itemData.quantity   + quantity
   itemData.totalValue = itemData.totalValue + (vendorPrice * quantity)
   NS.Data:SetItem(itemID, itemData)
+  -- Remembered past this session so lockbox.lua can recognise the box later
+  NS.Data:AddPocketed(itemID, quantity)
 
   -- Optional chat message
   if NS.Data:ShouldChatLogItems() then
@@ -171,6 +173,7 @@ function NS.Items:RecordSale(itemID, itemData, qty)
   itemData.soldQuantity = itemData.soldQuantity + qty
   itemData.soldValue    = itemData.soldValue    + value
   NS.Data:SetItem(itemID, itemData)
+  NS.Data:RemovePocketed(itemID, qty)
 
   self.sessionVendorValue = self.sessionVendorValue + value
   if NS.Stats then NS.Stats:RecordItemsSold(value) end
@@ -338,6 +341,10 @@ function NS.Items:GetDetailedStats()
 
   if NS.Tracking then
     lines[#lines + 1] = "Gold looted: " .. NS.Utils:FormatMoney(NS.Tracking:GetSessionGold())
+    local boxGold = NS.Tracking:GetSessionLockboxGold()
+    if boxGold > 0 then
+      lines[#lines + 1] = "  of which from lockboxes: " .. NS.Utils:FormatMoney(boxGold)
+    end
   end
   lines[#lines + 1] = "Items sold: " .. NS.Utils:FormatMoney(self.sessionVendorValue)
 
