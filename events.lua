@@ -60,6 +60,11 @@ local function RegisterTrackingEvents()
   eventFrame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
   eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
   eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+  -- Lockbox gold: LOOT_READY covers fast auto-loot, where the loot can be
+  -- taken before LOOT_OPENED is delivered.
+  eventFrame:RegisterEvent("LOOT_READY")
+  eventFrame:RegisterEvent("LOOT_OPENED")
+  eventFrame:RegisterEvent("LOOT_CLOSED")
 end
 
 -------------------------------------------------------------------------------
@@ -91,6 +96,7 @@ handlers.PLAYER_LOGIN = function()
   NS.Tracking:Initialize()
   -- Items:Initialize clears session items (consistent with sessionGold reset)
   NS.Items:Initialize()
+  if NS.Lockbox then NS.Lockbox:Initialize() end
 
   if NS.Coins then
     NS.Coins:Initialize()
@@ -153,6 +159,19 @@ handlers.CHAT_MSG_LOOT = function(_, msg, _, _, _, _, _, _, _, _, _, _, senderGU
   local quantity = tonumber(msg:match("x(%d+)[%s%.]*$")) or 1
 
   NS.Items:OnLootReceived(itemLink, quantity)
+end
+
+-------------------------------------------------------------------------------
+-- Loot window — gold from pickpocketed lockboxes
+-------------------------------------------------------------------------------
+
+handlers.LOOT_READY = function()
+  if NS.Lockbox then NS.Lockbox:OnLootOpened() end
+end
+handlers.LOOT_OPENED = handlers.LOOT_READY
+
+handlers.LOOT_CLOSED = function()
+  if NS.Lockbox then NS.Lockbox:OnLootClosed() end
 end
 
 -------------------------------------------------------------------------------

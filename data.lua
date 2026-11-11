@@ -56,6 +56,7 @@ function NS.Data:InitializeUI()
     hideInCombat    = true,
     textMoney       = false,
     autoSell        = NS.Config.AUTOSELL_DEFAULTS.enabled,
+    trackLockboxes  = NS.Config.LOCKBOX_DEFAULTS.enabled,
     point           = d.point,
     relativePoint   = d.relativePoint,
     offsetX         = d.offsetX,
@@ -86,6 +87,9 @@ end
 function NS.Data:InitializeItems()
   local db = PickPocketTrackerDB
   if db.items == nil then db.items = {} end
+  -- Pickpocketed items still unopened/unsold. Unlike `items` this survives
+  -- the session, so a junkbox opened days later is still recognised.
+  if db.pocketed == nil then db.pocketed = {} end
 end
 
 -------------------------------------------------------------------------------
@@ -130,6 +134,10 @@ function NS.Data:SetCoinWindowHidden(v) self.db.coinWindowHidden = v end
 -- Auto-sell fence items
 function NS.Data:ShouldAutoSell()    return self.db.autoSell end
 function NS.Data:SetAutoSell(v)      self.db.autoSell = v end
+
+-- Count gold found inside pickpocketed lockboxes
+function NS.Data:ShouldTrackLockboxes() return self.db.trackLockboxes end
+function NS.Data:SetTrackLockboxes(v)   self.db.trackLockboxes = v end
 
 -- Hide tracking windows while in combat
 function NS.Data:ShouldHideInCombat() return self.db.hideInCombat end
@@ -218,6 +226,22 @@ function NS.Data:GetItemCount()
   local n = 0
   for _ in pairs(self.db.items) do n = n + 1 end
   return n
+end
+
+-------------------------------------------------------------------------------
+-- Pickpocketed items still held (persistent, per character) — lets lockbox.lua
+-- tell a pickpocketed box from one obtained some other way.
+-------------------------------------------------------------------------------
+
+function NS.Data:GetPocketedCount(id) return self.db.pocketed[id] or 0 end
+
+function NS.Data:AddPocketed(id, n)
+  self.db.pocketed[id] = (self.db.pocketed[id] or 0) + (n or 1)
+end
+
+function NS.Data:RemovePocketed(id, n)
+  local left = (self.db.pocketed[id] or 0) - (n or 1)
+  self.db.pocketed[id] = left > 0 and left or nil
 end
 
 -------------------------------------------------------------------------------

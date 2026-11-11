@@ -69,6 +69,15 @@ function NS.Stats:RecordGoldLooted(amount)
   self.db.totalGold = self.db.totalGold + amount
 end
 
+--- Gold from a pickpocketed lockbox. Counts toward gold looted, but leaves the
+--- first/last pickpocket timestamps alone — opening a box is not a pickpocket.
+function NS.Stats:RecordLockboxGold(amount)
+  if amount <= 0 then return end
+  local char = self.db.characters[self:GetCharacterKey()]
+  char.goldLooted   = char.goldLooted + amount
+  self.db.totalGold = self.db.totalGold + amount
+end
+
 function NS.Stats:RecordItemsSold(amount)
   if amount <= 0 then return end
   local char = self.db.characters[self:GetCharacterKey()]

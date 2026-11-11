@@ -248,6 +248,10 @@ function NS.Options:PopulateSettings(content)
       function() return NS.Data:ShouldAutoSell() end,
       function(v) NS.Data:SetAutoSell(v) end },
 
+    { "Count Lockbox Gold", "Count gold found inside pickpocketed lockboxes and junkboxes when you open them",
+      function() return NS.Data:ShouldTrackLockboxes() end,
+      function(v) NS.Data:SetTrackLockboxes(v) end },
+
     { "Hide Windows in Combat", "Hide the haul and Coins of Air windows while you are in combat",
       function() return NS.Data:ShouldHideInCombat() end,
       function(v)

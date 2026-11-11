@@ -3,7 +3,7 @@
 -- drives the addon the way the game does: PLAYER_LOGIN, then real events.
 --
 -- This is the file that catches load-order breakage, a missing global, and
--- anything that only shows up once all 15 modules are wired together. The file
+-- anything that only shows up once all 16 modules are wired together. The file
 -- list comes from the TOC itself, so adding a module to the addon without
 -- adding it here cannot silently skip it.
 -------------------------------------------------------------------------------
@@ -27,11 +27,11 @@ local function login(classToken)
 end
 
 H.section("the TOC lists every module, in a loadable order")
-H.eq("15 lua files in the TOC", #FILES, 15)
+H.eq("16 lua files in the TOC", #FILES, 16)
 H.eq("config.lua loads first",  FILES[1], "config.lua")
 H.eq("init.lua loads last",     FILES[#FILES], "init.lua")
 NS = H.newEnv(FILES)
-for _, mod in ipairs({ "Config", "Utils", "Data", "Tracking", "Items", "Coins",
+for _, mod in ipairs({ "Config", "Utils", "Data", "Tracking", "Items", "Lockbox", "Coins",
                        "Stats", "UI", "Options", "Minimap", "Events", "Commands" }) do
   H.check("NS." .. mod .. " defined", NS[mod] ~= nil)
 end
@@ -100,7 +100,8 @@ for _, f in ipairs(H.frames) do
   if f.__events and f.__events.PLAYER_MONEY then rogueFrame = f end
 end
 H.check("PLAYER_MONEY registered", rogueFrame ~= nil)
-for _, ev in ipairs({ "UNIT_SPELLCAST_SUCCEEDED", "CHAT_MSG_LOOT", "MERCHANT_SHOW",
+for _, ev in ipairs({ "LOOT_READY", "LOOT_OPENED", "LOOT_CLOSED",
+                      "UNIT_SPELLCAST_SUCCEEDED", "CHAT_MSG_LOOT", "MERCHANT_SHOW",
                       "MERCHANT_CLOSED", "CURRENCY_DISPLAY_UPDATE",
                       "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }) do
   H.check(ev .. " registered", rogueFrame ~= nil and rogueFrame.__events[ev] == true)

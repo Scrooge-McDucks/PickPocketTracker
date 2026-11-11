@@ -9,7 +9,7 @@ NS.Config = {}
 
 -- Addon metadata
 NS.Config.ADDON_NAME = NS.name or "PickPocketTracker"
-NS.Config.VERSION = "1.10.0"
+NS.Config.VERSION = "1.11.0"
 
 -- Pick Pocket spell ID (unchanged since Classic)
 NS.Config.PICK_POCKET_SPELL_ID = 921
@@ -137,6 +137,15 @@ NS.Config.AUTOSELL_DEFAULTS = {
   -- up and tell the player. Covers a locked item as well as the API being
   -- restricted outright by a patch.
   maxStalls    = 5,
+}
+
+-- Lockbox gold tracking (lockbox.lua)
+NS.Config.LOCKBOX_DEFAULTS = {
+  enabled    = true,
+  -- Max seconds between right-clicking a box and its loot window appearing.
+  openWindow = 3.0,
+  -- With auto-loot, PLAYER_MONEY can arrive just after LOOT_CLOSED.
+  closeGrace = 1.5,
 }
 
 -- Shared bar chart defaults (used by chart.lua)

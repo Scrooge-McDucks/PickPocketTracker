@@ -35,10 +35,11 @@ into CI.
 | `test_data.lua` | SavedVariables defaults, backfill, clamping, round-tripping |
 | `test_tracking.lua` | Gold attribution via the post-cast detection window |
 | `test_items.lua` | Loot attribution, fence eligibility, vendor-sale detection |
+| `test_lockbox.lua` | Gold from opening pickpocketed lockboxes, and its on/off option |
 | `test_autosell.lua` | The auto-sell ticker: vendor guard, refused sells, retries |
 | `test_stats.lua` | Lifetime stats, account roll-ups, resets, multi-character |
 | `test_coins.lua` | Coins of Air currency deltas and the display window |
-| `test_integration.lua` | All 15 TOC files loaded in TOC order, driven by real events |
+| `test_integration.lua` | All 16 TOC files loaded in TOC order, driven by real events |
 
 ## How the stub works
 

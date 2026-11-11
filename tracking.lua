@@ -1,7 +1,8 @@
 -------------------------------------------------------------------------------
 -- tracking.lua — Gold detection via PLAYER_MONEY + time-window attribution
 -- When gold increases within `detectionWindowSeconds` of a Pick Pocket cast,
--- the delta is attributed to pickpocketing.
+-- the delta is attributed to pickpocketing. Gold looted from a pickpocketed
+-- lockbox (see lockbox.lua) is attributed too, however long after the cast.
 -------------------------------------------------------------------------------
 local _, NS = ...
 
@@ -12,12 +13,14 @@ local GetTime  = GetTime
 
 -- Session-only state (not persisted)
 NS.Tracking.sessionGold             = 0
+NS.Tracking.sessionLockboxGold      = 0   -- portion of sessionGold from lockboxes
 NS.Tracking.lastPickPocketTime      = 0
 NS.Tracking.lastMoneyAmount         = 0
 NS.Tracking.detectionWindowSeconds  = NS.Config.DEFAULT_WINDOW_SECONDS
 
 function NS.Tracking:Initialize()
   self.sessionGold            = 0
+  self.sessionLockboxGold     = 0
   self.lastPickPocketTime     = 0
   self.lastMoneyAmount        = GetMoney()
   -- Load persisted detection window (survives reload/logout)
@@ -26,6 +29,7 @@ end
 
 function NS.Tracking:ResetSession()
   self.sessionGold        = 0
+  self.sessionLockboxGold = 0
   self.lastPickPocketTime = 0
   self.lastMoneyAmount    = GetMoney()
 end
@@ -56,13 +60,24 @@ function NS.Tracking:OnMoneyChanged()
   local delta   = current - self.lastMoneyAmount
   self.lastMoneyAmount = current
 
-  if delta <= 0 or not self:IsInDetectionWindow() then
-    return 0
+  if delta <= 0 then return 0 end
+
+  if self:IsInDetectionWindow() then
+    self.sessionGold = self.sessionGold + delta
+    if NS.Stats then NS.Stats:RecordGoldLooted(delta) end
+    return delta
   end
 
-  self.sessionGold = self.sessionGold + delta
-  if NS.Stats then NS.Stats:RecordGoldLooted(delta) end
-  return delta
+  -- Outside the window: still ours if a pickpocketed lockbox is being looted.
+  if NS.Lockbox and NS.Lockbox:IsLooting() then
+    self.sessionGold        = self.sessionGold        + delta
+    self.sessionLockboxGold = self.sessionLockboxGold + delta
+    if NS.Stats then NS.Stats:RecordLockboxGold(delta) end
+    NS.Lockbox:OnGoldCredited(delta)
+    return delta
+  end
+
+  return 0
 end
 
 --- True if we're still within the detection window after the last cast.
@@ -73,6 +88,7 @@ end
 -- Public getters
 function NS.Tracking:GetDetectionWindow() return self.detectionWindowSeconds end
 function NS.Tracking:GetSessionGold()     return self.sessionGold end
+function NS.Tracking:GetSessionLockboxGold() return self.sessionLockboxGold end
 
 --- Confirmed session value = looted gold + sold items.
 function NS.Tracking:GetTotalValue()

@@ -71,6 +71,8 @@ function NS.Commands:HandleCommand(msg)
     self:HandleCoinsCommand(msg)
   elseif msg:match("^autosell") then
     self:HandleAutoSellCommand(msg)
+  elseif msg:match("^lockbox") then
+    self:HandleLockboxCommand(msg)
   else
     NS.Utils:PrintError("Unknown command: " .. msg)
     NS.Utils:PrintInfo("Type /pp help for available commands")
@@ -111,6 +113,8 @@ function NS.Commands:HandleHelp()
   end
   NS.Utils:Print(nil, "  /pp autosell - Toggle auto-sell fence items")
   NS.Utils:Print(nil, "  /pp autosell on|off - Enable/disable auto-sell")
+  NS.Utils:Print(nil, "  /pp lockbox - Toggle counting gold from pickpocketed lockboxes")
+  NS.Utils:Print(nil, "  /pp lockbox on|off - Enable/disable lockbox gold")
   NS.Utils:Print(nil, "  /pp help - Show this help")
 end
 
@@ -345,5 +349,28 @@ function NS.Commands:HandleAutoSellCommand(msg)
     NS.Utils:PrintWarning("Auto-sell fence items disabled")
   else
     NS.Utils:PrintError("Usage: /pp autosell [on|off]")
+  end
+end
+
+function NS.Commands:HandleLockboxCommand(msg)
+  local subCmd = msg:match("^lockbox%s+(%S+)$")
+  local enabled
+
+  if not subCmd then
+    enabled = not NS.Data:ShouldTrackLockboxes()
+  elseif subCmd == "on" then
+    enabled = true
+  elseif subCmd == "off" then
+    enabled = false
+  else
+    NS.Utils:PrintError("Usage: /pp lockbox [on|off]")
+    return
+  end
+
+  NS.Data:SetTrackLockboxes(enabled)
+  if enabled then
+    NS.Utils:PrintSuccess("Lockbox gold counting enabled")
+  else
+    NS.Utils:PrintWarning("Lockbox gold counting disabled")
   end
 end
