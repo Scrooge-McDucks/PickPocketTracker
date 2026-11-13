@@ -18,6 +18,7 @@ H.eq("barGraph default",     D:ShouldShowBarGraph(),  C.UI_DEFAULTS.showBarGraph
 H.eq("autoSell default",     D:ShouldAutoSell(),      C.AUTOSELL_DEFAULTS.enabled)
 H.eq("hideInCombat default", D:ShouldHideInCombat(),  true)
 H.eq("trackLockboxes default", D:ShouldTrackLockboxes(), true)
+H.eq("junk-only default", D:ShouldAutoSellJunkOnly(), false)
 H.eq("trackCoins default",   D:ShouldTrackCoins(),    false)
 H.check("minimap table created", type(D.db.minimap) == "table")
 H.eq("minimap hidden default", D:IsMinimapHidden(), C.MINIMAP_DEFAULTS.hide)
@@ -52,6 +53,7 @@ local flags = {
   { "AutoSell",       D.SetAutoSell,       D.ShouldAutoSell },
   { "HideInCombat",   D.SetHideInCombat,   D.ShouldHideInCombat },
   { "TrackLockboxes", D.SetTrackLockboxes, D.ShouldTrackLockboxes },
+  { "AutoSellJunkOnly", D.SetAutoSellJunkOnly, D.ShouldAutoSellJunkOnly },
   { "CoinWindowHidden", D.SetCoinWindowHidden, D.IsCoinWindowHidden },
   { "MinimapHidden",  D.SetMinimapHidden,  D.IsMinimapHidden },
 }

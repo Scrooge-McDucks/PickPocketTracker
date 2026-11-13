@@ -206,4 +206,67 @@ H.eq("credited once, not twice", I:GetSessionVendorValue(), 4 * 30)
 H.eq("sold quantity exact", D:GetItem(100).soldQuantity, 4)
 H.eq("remaining quantity zero", D:GetItem(100).quantity, 0)
 
+H.section("keep list: a kept item is never auto-sold")
+fresh()
+pickpocket(100, 5, 10)      -- junk
+pickpocket(300, 2, 40)      -- a potion the player wants
+H.put(0, 1, 100, 5)
+H.put(0, 2, 300, 2)
+D:SetKeptItem(300, "Potion")
+H.eq("kept item is not pending vendor value", I:GetUnsoldValue(), 50)
+I:OnMerchantShow()
+I:StartAutoSell()
+H.tick(6)
+H.check("junk sold", H.slot(0, 1) == nil)
+H.check("kept item still in bags", H.slot(0, 2) ~= nil)
+H.eq("only one sell call", H.useCalls, 1)
+H.eq("ticker stopped", H.liveTickers(), 0)
+H.eq("no stall warning", H.chatCount(), 0)
+H.check("stats mark it as kept", I:GetDetailedStats():find("[kept]", 1, true) ~= nil)
+
+H.section("keep list: selling a kept item by hand is still credited")
+H.bags[0][2] = nil          -- player sells it manually
+H.merchantOpen = false
+I:OnMerchantClosed()
+H.eq("junk + manual sale credited", I:GetSessionVendorValue(), 5 * 10 + 2 * 40)
+
+H.section("keep list: removing an item lets auto-sell take it again")
+fresh()
+pickpocket(300, 2, 40)
+H.put(0, 1, 300, 2)
+D:SetKeptItem(300)
+D:RemoveKeptItem(300)
+I:OnMerchantShow()
+I:StartAutoSell()
+H.tick(4)
+H.check("sold once un-kept", H.slot(0, 1) == nil)
+
+H.section("junk only: grey items sell, better ones are kept")
+fresh()
+pickpocket(100, 5, 10)
+pickpocket(300, 2, 40)
+H.itemDB[100].quality = 0   -- poor
+H.itemDB[300].quality = 1   -- common
+H.put(0, 1, 100, 5)
+H.put(0, 2, 300, 2)
+D:SetAutoSellJunkOnly(true)
+I:OnMerchantShow()
+I:StartAutoSell()
+H.tick(6)
+H.check("grey item sold", H.slot(0, 1) == nil)
+H.check("white item kept", H.slot(0, 2) ~= nil)
+H.eq("ticker stopped", H.liveTickers(), 0)
+
+H.section("junk only: an item of unknown quality is kept, not sold")
+H.check("unknown quality refused", I:MayAutoSell(100, nil) == false)
+D:SetAutoSellJunkOnly(false)
+H.check("with junk-only off it may sell", I:MayAutoSell(100, nil) == true)
+
+H.section("keep list survives a reload")
+D:SetKeptItem(300, "Potion")
+NS = H.reload(MODULES)
+NS.Data:Initialize()
+H.check("still kept after reload", NS.Data:IsKeptItem(300))
+H.eq("name preserved", NS.Data:GetKeptItems()[300], "Potion")
+
 H.report()

@@ -16,6 +16,8 @@ The addon distinguishes between fence items (items with a vendor sell price) and
 
 When enabled, opening a vendor automatically sells your tracked pickpocket fence items one at a time. The queue/ticker approach avoids conflicts with other auto-sell addons and only sells items the addon is actually tracking — it won't touch non-pickpocketed items even if they share the same item ID. If a stack in your bags is larger than the tracked pickpocket quantity, it's skipped to avoid overselling.
 
+To hold on to useful loot such as consumables, either turn on **Auto-sell Junk Only** (only grey items are sold) or put individual items on the keep list: type `/pp keep ` and shift-click the item. Kept items are never auto-sold and don't count as pending vendor value; you can still sell them by hand.
+
 ### Coins of Air
 
 Enable Coins of Air tracking in the Display settings and a second small window appears with your session count. Hover it for session total, currently held, and lifetime stats. Both windows share the same capabilities: drag, resize, lock, icon toggle.
@@ -68,6 +70,9 @@ Log in on a rogue and you're good.
 | `/pp coins reset` | Reset coin session count |
 | `/pp autosell` | Toggle auto-sell fence items |
 | `/pp autosell on` / `off` | Explicit enable/disable |
+| `/pp autosell junk on` / `off` | Auto-sell only grey (junk) items |
+| `/pp keep [item]` | Keep an item out of auto-sell (shift-click it; repeat to undo) |
+| `/pp keep list` / `clear` | Show or empty the keep list |
 | `/pp lockbox` | Toggle counting gold from pickpocketed lockboxes |
 | `/pp lockbox on` / `off` | Explicit enable/disable |
 | `/pp help` | All commands |
@@ -76,7 +81,7 @@ Log in on a rogue and you're good.
 
 Open with `/pp`, click the minimap button (left-click), the Addon Compartment entry, or go through Game Menu → AddOns.
 
-**Display** — eleven checkboxes:
+**Display** — twelve checkboxes:
 - Show Main Window — toggle the haul bar on/off
 - Lock Window Position — prevent dragging and resizing (shift-drag bypasses the lock for repositioning)
 - Show Pickpocket Icon — the ability icon in the haul bar
@@ -84,6 +89,7 @@ Open with `/pp`, click the minimap button (left-click), the Addon Compartment en
 - Show Money as Text — `5g 20s 30c` instead of coin icons
 - Log Items to Chat — prints pickpocketed/sold item messages
 - Auto-sell Fence Items — automatically sell tracked pickpocket loot at vendors
+- Auto-sell Junk Only — auto-sell only poor-quality (grey) items and keep everything else (off by default)
 - Count Lockbox Gold — count gold found inside pickpocketed lockboxes and junkboxes when you open them (on by default)
 - Hide Windows in Combat — hide the haul and Coins of Air windows during combat
 - Show Character Graphs — toggle the earnings and coins bar graphs

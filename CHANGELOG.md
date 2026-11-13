@@ -1,3 +1,7 @@
+## v1.12.0
+
+- Added a keep list (/pp keep) and an "Auto-sell Junk Only" option so useful items like consumables aren't auto-sold.
+
 ## v1.11.1
 
 - Minimap button now sits on the outside edge of the minimap.
