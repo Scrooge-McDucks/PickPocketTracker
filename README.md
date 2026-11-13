@@ -90,6 +90,7 @@ Open with `/pp`, click the minimap button (left-click), the Addon Compartment en
 - Log Items to Chat — prints pickpocketed/sold item messages
 - Auto-sell Fence Items — automatically sell tracked pickpocket loot at vendors
 - Auto-sell Junk Only — auto-sell only poor-quality (grey) items and keep everything else (off by default)
+- Keep list — shows how many items are kept out of auto-sell, with a Clear All button (add or remove items with `/pp keep`)
 - Count Lockbox Gold — count gold found inside pickpocketed lockboxes and junkboxes when you open them (on by default)
 - Hide Windows in Combat — hide the haul and Coins of Air windows during combat
 - Show Character Graphs — toggle the earnings and coins bar graphs

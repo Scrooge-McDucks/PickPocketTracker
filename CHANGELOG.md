@@ -1,3 +1,7 @@
+## v1.12.2
+
+- Options panel now shows how many items are on the keep list, with a Clear All button.
+
 ## v1.12.1
 
 - With "Auto-sell Junk Only" on, non-junk items no longer count as pending vendor value.

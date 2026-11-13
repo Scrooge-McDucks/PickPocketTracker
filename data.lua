@@ -146,6 +146,11 @@ function NS.Data:SetAutoSellJunkOnly(v)   self.db.autoSellJunkOnly = v end
 -- Keep list: items that are never auto-sold (persistent, per character)
 function NS.Data:IsKeptItem(id)        return self.db.keepItems[id] ~= nil end
 function NS.Data:GetKeptItems()        return self.db.keepItems end
+function NS.Data:GetKeptItemCount()
+  local n = 0
+  for _ in pairs(self.db.keepItems) do n = n + 1 end
+  return n
+end
 function NS.Data:SetKeptItem(id, name) self.db.keepItems[id] = name or true end
 function NS.Data:RemoveKeptItem(id)    self.db.keepItems[id] = nil end
 function NS.Data:ClearKeptItems()      self.db.keepItems = {} end
