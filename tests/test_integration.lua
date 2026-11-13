@@ -273,6 +273,34 @@ H.check("minimap hidden", NS.Data:IsMinimapHidden() == true)
 slash("minimap reset")
 H.eq("position reset", NS.Data.db.minimap.angle, NS.Config.MINIMAP_DEFAULTS.angle)
 
+-- The button must sit just outside the minimap's rim whatever its size:
+-- retail's minimap is ~198 wide, Classic-family clients ~140.
+local function buttonDistance(width, angle, shape)
+  Minimap:SetSize(width, width)
+  GetMinimapShape = shape and function() return shape end or nil
+  NS.Data.db.minimap.angle = angle
+  NS.Minimap:Apply()
+  local _, _, _, x, y = NS.Minimap.button:GetPoint(1)
+  GetMinimapShape = nil
+  return math.sqrt(x * x + y * y), x, y
+end
+local off = NS.Config.MINIMAP_DEFAULTS.edgeOffset
+slash("minimap on")
+H.check("retail-size minimap: button outside the edge",
+  math.abs(buttonDistance(198, 220) - (99 + off)) < 0.001)
+H.check("classic-size minimap: button outside the edge",
+  math.abs(buttonDistance(140, 45) - (70 + off)) < 0.001)
+local _, sx, sy = buttonDistance(198, 45, "SQUARE")
+H.check("square minimap: button clamped to the corner",
+  math.abs(sx - (99 + off)) < 0.001 and math.abs(sy - (99 + off)) < 0.001)
+local _, ex, ey = buttonDistance(198, 0, "SQUARE")
+H.check("square minimap: button on the right-hand side",
+  math.abs(ex - (99 + off)) < 0.001 and math.abs(ey) < 0.001)
+PickPocketTrackerDB.minimap.radius = 80
+NS.Data:InitializeMinimap()
+H.check("old saved radius discarded", PickPocketTrackerDB.minimap.radius == nil)
+slash("minimap off")
+
 H.section("informational and option commands render")
 for _, cmd in ipairs({ "help", "stats", "items", "lifetime", "account",
                        "", "config", "options", "settings",

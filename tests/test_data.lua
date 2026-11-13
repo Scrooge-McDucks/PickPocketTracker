@@ -153,9 +153,8 @@ H.check("nil class rejected", D:IsRogue() == false)
 
 H.section("minimap position reset")
 H.classToken = "ROGUE"
-D.db.minimap.angle, D.db.minimap.radius = 1, 2
+D.db.minimap.angle = 1
 D:ResetMinimapPosition()
 H.eq("angle restored",  D.db.minimap.angle,  C.MINIMAP_DEFAULTS.angle)
-H.eq("radius restored", D.db.minimap.radius, C.MINIMAP_DEFAULTS.radius)
 
 H.report()
