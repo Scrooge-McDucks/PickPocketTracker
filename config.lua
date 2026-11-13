@@ -61,6 +61,8 @@ NS.Config.MINIMAP_DEFAULTS = {
   -- from the centre is worked out from the minimap's actual size, which
   -- differs between clients (retail's minimap is much larger than Classic's).
   edgeOffset = 5,
+  -- On square minimaps, how far the button is pulled in at the corners.
+  cornerRounding = 10,
 }
 
 -- Chat message colours (hex, no leading |cff)

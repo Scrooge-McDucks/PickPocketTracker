@@ -290,12 +290,23 @@ H.check("retail-size minimap: button outside the edge",
   math.abs(buttonDistance(198, 220) - (99 + off)) < 0.001)
 H.check("classic-size minimap: button outside the edge",
   math.abs(buttonDistance(140, 45) - (70 + off)) < 0.001)
+local edge   = 99 + off
+local corner = math.cos(math.rad(45)) *
+  (math.sqrt(2 * edge * edge) - NS.Config.MINIMAP_DEFAULTS.cornerRounding)
 local _, sx, sy = buttonDistance(198, 45, "SQUARE")
-H.check("square minimap: button clamped to the corner",
-  math.abs(sx - (99 + off)) < 0.001 and math.abs(sy - (99 + off)) < 0.001)
+H.check("square minimap: button tucked into the corner",
+  math.abs(sx - corner) < 0.001 and math.abs(sy - corner) < 0.001)
 local _, ex, ey = buttonDistance(198, 0, "SQUARE")
 H.check("square minimap: button on the right-hand side",
-  math.abs(ex - (99 + off)) < 0.001 and math.abs(ey) < 0.001)
+  math.abs(ex - edge) < 0.001 and math.abs(ey) < 0.001)
+-- SIDE-LEFT: left half round, right half square
+H.check("part-round minimap: round quadrant stays on the circle",
+  math.abs(buttonDistance(198, 135, "SIDE-LEFT") - edge) < 0.001)
+local _, px, py = buttonDistance(198, 45, "SIDE-LEFT")
+H.check("part-round minimap: square quadrant follows the corner",
+  math.abs(px - corner) < 0.001 and math.abs(py - corner) < 0.001)
+H.check("unknown shape falls back to round",
+  math.abs(buttonDistance(198, 300, "HEXAGON") - edge) < 0.001)
 PickPocketTrackerDB.minimap.radius = 80
 NS.Data:InitializeMinimap()
 H.check("old saved radius discarded", PickPocketTrackerDB.minimap.radius == nil)
