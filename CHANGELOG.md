@@ -1,3 +1,7 @@
+## v1.11.1
+
+- Minimap button now sits on the outside edge of the minimap.
+
 ## v1.11.0
 
 - Added option to track gold from lockboxes. On by default.

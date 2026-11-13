@@ -9,7 +9,7 @@ NS.Config = {}
 
 -- Addon metadata
 NS.Config.ADDON_NAME = NS.name or "PickPocketTracker"
-NS.Config.VERSION = "1.11.0"
+NS.Config.VERSION = "1.11.1"
 
 -- Pick Pocket spell ID (unchanged since Classic)
 NS.Config.PICK_POCKET_SPELL_ID = 921
@@ -57,7 +57,12 @@ NS.Config.UI_DEFAULTS = {
 NS.Config.MINIMAP_DEFAULTS = {
   hide   = true,
   angle  = 220,
-  radius = 80,
+  -- How far outside the minimap's edge the button's centre sits. The distance
+  -- from the centre is worked out from the minimap's actual size, which
+  -- differs between clients (retail's minimap is much larger than Classic's).
+  edgeOffset = 5,
+  -- On square minimaps, how far the button is pulled in at the corners.
+  cornerRounding = 10,
 }
 
 -- Chat message colours (hex, no leading |cff)

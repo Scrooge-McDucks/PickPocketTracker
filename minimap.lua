@@ -3,7 +3,8 @@
 --
 -- Coin icon with a standard tracking-ring border. Left-click opens options,
 -- right-click toggles the haul window. Dragging repositions around the
--- minimap edge using polar coordinates saved in PickPocketTrackerDB.minimap.
+-- outside edge of the minimap; the angle is saved in PickPocketTrackerDB.minimap
+-- and the distance is derived from the minimap's current size and shape.
 --
 -- Uses its own ensureDB() because the minimap frame may be created before
 -- PLAYER_LOGIN fires (early TOC load order).
@@ -17,6 +18,9 @@ local math_deg  = math.deg
 local math_cos  = math.cos
 local math_sin  = math.sin
 local math_atan2 = math.atan2
+local math_max  = math.max
+local math_min  = math.min
+local math_sqrt = math.sqrt
 
 --- Safety net: ensure minimap SV subtable exists even before Data:Initialize.
 --- References NS.Config.MINIMAP_DEFAULTS as single source of truth.
@@ -27,17 +31,58 @@ local function ensureDB()
   local d  = NS.Config.MINIMAP_DEFAULTS
   if mm.hide   == nil then mm.hide   = d.hide end
   if mm.angle  == nil then mm.angle  = d.angle end
-  if mm.radius == nil then mm.radius = d.radius end
   return mm
 end
 
---- Position button around minimap edge using polar coordinates.
-local function posFromAngle(btn, angleDeg, radius)
-  local a = math_rad(angleDeg or 0)
+-- Which quadrants of the minimap are rounded, per GetMinimapShape() — the
+-- community convention minimap-reshaping addons declare so buttons can follow
+-- their outline. Order: upper-left, lower-left, upper-right, lower-right.
+local MINIMAP_SHAPES = {
+  ["ROUND"]                 = { true,  true,  true,  true  },
+  ["SQUARE"]                = { false, false, false, false },
+  ["CORNER-TOPLEFT"]        = { true,  false, false, false },
+  ["CORNER-TOPRIGHT"]       = { false, false, true,  false },
+  ["CORNER-BOTTOMLEFT"]     = { false, true,  false, false },
+  ["CORNER-BOTTOMRIGHT"]    = { false, false, false, true  },
+  ["SIDE-LEFT"]             = { true,  true,  false, false },
+  ["SIDE-RIGHT"]            = { false, false, true,  true  },
+  ["SIDE-TOP"]              = { true,  false, true,  false },
+  ["SIDE-BOTTOM"]           = { false, true,  false, true  },
+  ["TRICORNER-TOPLEFT"]     = { true,  true,  true,  false },
+  ["TRICORNER-TOPRIGHT"]    = { true,  false, true,  true  },
+  ["TRICORNER-BOTTOMLEFT"]  = { true,  true,  false, true  },
+  ["TRICORNER-BOTTOMRIGHT"] = { false, true,  true,  true  },
+}
+
+--- Position the button on the outside edge of the minimap at `angleDeg`.
+--- The distance comes from the minimap's real size (half its width plus a
+--- small offset — the same rule LibDBIcon uses), so the button sits on the
+--- rim on every client. In a squared-off quadrant the button follows the
+--- straight sides instead of the circle.
+local function posFromAngle(btn, angleDeg)
+  local a      = math_rad(angleDeg or 0)
+  local x, y   = math_cos(a), math_sin(a)
+  local d      = NS.Config.MINIMAP_DEFAULTS
+  local w = (Minimap:GetWidth()  or 140) / 2 + d.edgeOffset
+  local h = (Minimap:GetHeight() or 140) / 2 + d.edgeOffset
+
+  local q = 1
+  if y < 0 then q = q + 1 end   -- lower half
+  if x > 0 then q = q + 2 end   -- right half
+  local shape   = GetMinimapShape and GetMinimapShape() or "ROUND"
+  local rounded = (MINIMAP_SHAPES[shape] or MINIMAP_SHAPES.ROUND)[q]
+
+  if rounded then
+    x, y = x * w, y * h
+  else
+    local dw = math_sqrt(2 * w * w) - d.cornerRounding
+    local dh = math_sqrt(2 * h * h) - d.cornerRounding
+    x = math_max(-w, math_min(x * dw, w))
+    y = math_max(-h, math_min(y * dh, h))
+  end
+
   btn:ClearAllPoints()
-  btn:SetPoint("CENTER", Minimap, "CENTER",
-    math_cos(a) * (radius or 80),
-    math_sin(a) * (radius or 80))
+  btn:SetPoint("CENTER", Minimap, "CENTER", x, y)
 end
 
 --- Calculate angle from minimap centre to cursor position.
@@ -110,7 +155,7 @@ function NS.Minimap:Create(onToggle)
     if mm.hide then return end
     f:SetScript("OnUpdate", function()
       mm.angle = angleFromCursor()
-      posFromAngle(f, mm.angle, mm.radius)
+      posFromAngle(f, mm.angle)
     end)
   end)
   btn:SetScript("OnDragStop", function(f)
@@ -119,7 +164,7 @@ function NS.Minimap:Create(onToggle)
 
   self.button   = btn
   self.onToggle = onToggle
-  posFromAngle(btn, mm.angle, mm.radius)
+  posFromAngle(btn, mm.angle)
   self:Apply()
   return btn
 end
@@ -132,7 +177,7 @@ function NS.Minimap:Apply()
     self.button:Hide()
   else
     self.button:Show()
-    posFromAngle(self.button, mm.angle, mm.radius)
+    posFromAngle(self.button, mm.angle)
   end
 end
 

@@ -81,7 +81,8 @@ function NS.Data:InitializeMinimap()
   local mm = db.minimap
   if mm.hide   == nil then mm.hide   = d.hide end
   if mm.angle  == nil then mm.angle  = d.angle end
-  if mm.radius == nil then mm.radius = d.radius end
+  -- Pre-1.11.1 stored a fixed radius that sat inside retail's larger minimap
+  mm.radius = nil
 end
 
 function NS.Data:InitializeItems()
@@ -209,8 +210,7 @@ end
 
 function NS.Data:ResetMinimapPosition()
   local d = NS.Config.MINIMAP_DEFAULTS
-  self.db.minimap.angle  = d.angle
-  self.db.minimap.radius = d.radius
+  self.db.minimap.angle = d.angle
 end
 
 -------------------------------------------------------------------------------
