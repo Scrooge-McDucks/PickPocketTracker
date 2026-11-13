@@ -310,6 +310,33 @@ function NS.Options:PopulateSettings(content)
     cb:SetPoint("TOPLEFT", 8, y); y = y - 28
     self.checkboxes[#self.checkboxes + 1] = cb
   end
+
+  -- Keep list: how many items are held back from auto-sell, and a way to
+  -- empty the list. Items are added and removed with /pp keep.
+  y = y - 6
+  local keepLabel = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+  keepLabel:SetPoint("TOPLEFT", 14, y - 4)
+  self.keepLabel = keepLabel
+
+  local keepClear = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+  keepClear:SetSize(80, 20)
+  keepClear:SetPoint("LEFT", keepLabel, "RIGHT", 10, 0)
+  keepClear:SetText("Clear All")
+  keepClear:SetNormalFontObject("GameFontHighlightSmall")
+  keepClear:SetScript("OnClick", function() StaticPopup_Show("PPT_CONFIRM_CLEAR_KEEP") end)
+  keepClear:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:AddLine("Keep List", 1, 1, 1)
+    GameTooltip:AddLine("Items on the keep list are never auto-sold.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Add or remove one: type /pp keep and shift-click the item.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("See them all: /pp keep list", 0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+  end)
+  keepClear:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  self.keepClearBtn = keepClear
+  self:UpdateKeepList()
+  y = y - 26
+
   y = y - 8
 
   CreateDivider(content, y); y = y - 18
@@ -517,7 +544,19 @@ end
 -- with changes made via slash commands while the panel was closed.
 --------------------------------------------------------------------------------
 
+--- Refresh the keep-list count; the Clear All button is only usable when
+--- there is something to clear.
+function NS.Options:UpdateKeepList()
+  if not self.keepLabel then return end
+  local n = NS.Data:GetKeptItemCount()
+  self.keepLabel:SetText(string_format("Keep list: %d item%s kept out of auto-sell",
+    n, n == 1 and "" or "s"))
+  if self.keepClearBtn then self.keepClearBtn:SetEnabled(n > 0) end
+end
+
 function NS.Options:RefreshControls()
+  self:UpdateKeepList()
+
   -- Main checkboxes
   for _, cb in ipairs(self.checkboxes or {}) do
     if cb.getter then cb:SetChecked(cb.getter()) end
@@ -815,6 +854,17 @@ function NS.Options:RegisterDialogs()
     text     = "Reset all lifetime statistics for this character?\n\nThis cannot be undone!",
     button1  = "Reset", button2 = "Cancel",
     OnAccept = function() if NS.Stats then NS.Stats:ResetCharacter(); refreshAll() end end,
+    timeout  = 0, whileDead = true, hideOnEscape = true,
+  }
+
+  StaticPopupDialogs["PPT_CONFIRM_CLEAR_KEEP"] = {
+    text     = "Remove every item from the keep list?\n\nAuto-sell will be able to sell them again.",
+    button1  = "Clear All", button2 = "Cancel",
+    OnAccept = function()
+      NS.Data:ClearKeptItems()
+      NS.Options:UpdateKeepList()
+      if NS.UI then NS.UI:UpdateDisplay() end
+    end,
     timeout  = 0, whileDead = true, hideOnEscape = true,
   }
 

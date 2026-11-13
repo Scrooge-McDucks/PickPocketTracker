@@ -429,6 +429,7 @@ function NS.Commands:HandleKeepCommand(msg)
     NS.Data:ClearKeptItems()
     NS.Utils:PrintWarning("Keep list cleared")
     if NS.UI then NS.UI:UpdateDisplay() end
+    if NS.Options then NS.Options:UpdateKeepList() end
     return
   end
 
@@ -453,4 +454,5 @@ function NS.Commands:HandleKeepCommand(msg)
     end)
   end
   if NS.UI then NS.UI:UpdateDisplay() end
+  if NS.Options then NS.Options:UpdateKeepList() end
 end

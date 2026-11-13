@@ -200,6 +200,8 @@ local function mockFrame(frameType, name, parent, template)
     __events = {}, __text = nil, __value = 0, __checked = false,
   }
 
+  function f:SetEnabled(v) self.__enabled = v and true or false end
+  function f:IsEnabled() return self.__enabled ~= false end
   function f:SetScript(e, fn) self.__scripts[e] = fn end
   function f:GetScript(e) return self.__scripts[e] end
   function f:HookScript(e, fn)
@@ -455,6 +457,7 @@ CreateFrame = function(frameType, name, parent, template)
 end
 
 StaticPopupDialogs = {}
+StaticPopup_Show = function(name) H.popupShown = name end
 SlashCmdList       = {}
 UISpecialFrames    = {}   -- frames closed by Escape; options.lua registers itself
 GetCursorPosition  = function() return 400, 300 end
