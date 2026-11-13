@@ -1,3 +1,7 @@
+## v1.12.1
+
+- With "Auto-sell Junk Only" on, non-junk items no longer count as pending vendor value.
+
 ## v1.12.0
 
 - Added a keep list (/pp keep) and an "Auto-sell Junk Only" option so useful items like consumables aren't auto-sold.

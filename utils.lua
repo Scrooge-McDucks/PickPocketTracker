@@ -154,6 +154,11 @@ function NS.Utils:GetVendorPrice(itemID)
   return vendorPrice or 0
 end
 
+--- Return the item's quality (0 = poor/grey), or nil if not cached yet.
+function NS.Utils:GetItemQuality(itemID)
+  return (select(3, SafeGetItemInfo(itemID)))
+end
+
 -------------------------------------------------------------------------------
 -- Bag scanning (used for vendor-sale detection)
 -------------------------------------------------------------------------------

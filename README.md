@@ -16,7 +16,7 @@ The addon distinguishes between fence items (items with a vendor sell price) and
 
 When enabled, opening a vendor automatically sells your tracked pickpocket fence items one at a time. The queue/ticker approach avoids conflicts with other auto-sell addons and only sells items the addon is actually tracking — it won't touch non-pickpocketed items even if they share the same item ID. If a stack in your bags is larger than the tracked pickpocket quantity, it's skipped to avoid overselling.
 
-To hold on to useful loot such as consumables, either turn on **Auto-sell Junk Only** (only grey items are sold) or put individual items on the keep list: type `/pp keep ` and shift-click the item. Kept items are never auto-sold and don't count as pending vendor value; you can still sell them by hand.
+To hold on to useful loot such as consumables, either turn on **Auto-sell Junk Only** (only grey items are sold) or put individual items on the keep list: type `/pp keep ` and shift-click the item. Items held back either way are never auto-sold and don't count as pending vendor value; you can still sell them by hand.
 
 ### Coins of Air
 

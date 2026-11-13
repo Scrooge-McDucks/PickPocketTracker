@@ -96,6 +96,7 @@ end
 function NS.Items:RecordPickpocketedItem(itemID, itemName, itemTexture, quantity)
   local vendorPrice = NS.Utils:GetVendorPrice(itemID)
   local isFence     = vendorPrice > 0
+  local quality     = NS.Utils:GetItemQuality(itemID)
   local itemData    = NS.Data:GetItem(itemID)
 
   if not itemData then
@@ -105,6 +106,7 @@ function NS.Items:RecordPickpocketedItem(itemID, itemName, itemTexture, quantity
       quantity     = 0,
       vendorPrice  = vendorPrice,
       isFence      = isFence,
+      quality      = quality,   -- lets junk-only mode judge pending value
       totalValue   = 0,
       soldQuantity = 0,
       soldValue    = 0,
@@ -117,6 +119,7 @@ function NS.Items:RecordPickpocketedItem(itemID, itemName, itemTexture, quantity
       -- Recompute totalValue for existing quantity at the corrected price
       itemData.totalValue  = vendorPrice * itemData.quantity
     end
+    if itemData.quality == nil then itemData.quality = quality end
   end
 
   itemData.quantity   = itemData.quantity   + quantity
@@ -340,8 +343,9 @@ function NS.Items:GetSessionVendorValue() return self.sessionVendorValue end
 function NS.Items:GetUnsoldValue()
   local total = 0
   for id, d in pairs(NS.Data:GetItems()) do
-    -- Kept items aren't going to the vendor, so they aren't pending value
-    if d.isFence and not NS.Data:IsKeptItem(id) then
+    -- Pending value is what auto-sell would take: items on the keep list, and
+    -- non-junk items in junk-only mode, aren't going to the vendor.
+    if d.isFence and self:MayAutoSell(id, d.quality) then
       total = total + (d.quantity * d.vendorPrice)
     end
   end
@@ -384,7 +388,7 @@ function NS.Items:GetDetailedStats()
     for _, entry in ipairs(sorted) do
       local d = entry.value
       if d.isFence then
-        local kept = NS.Data:IsKeptItem(entry.key) and " [kept]" or ""
+        local kept = self:MayAutoSell(entry.key, d.quality) and "" or " [kept]"
         lines[#lines + 1] = string_format("  %s%s: %d looted, %d sold (%s), %d unsold (%s)",
           d.name, kept, d.quantity + d.soldQuantity, d.soldQuantity,
           NS.Utils:FormatMoney(d.soldValue), d.quantity,

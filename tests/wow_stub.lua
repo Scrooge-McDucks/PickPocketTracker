@@ -99,8 +99,9 @@ H.resetWorld()
 -------------------------------------------------------------------------------
 
 --- Register an item in the fake item cache so C_Item.GetItemInfo knows it.
-function H.defineItem(itemID, name, price, texture)
-  H.itemDB[itemID] = { name = name, price = price, texture = texture or "icon" }
+function H.defineItem(itemID, name, price, texture, quality)
+  H.itemDB[itemID] = { name = name, price = price, texture = texture or "icon",
+                       quality = quality }
 end
 
 --- Place a stack in a bag slot.
@@ -340,7 +341,7 @@ C_Item = {
   GetItemInfo = function(itemID)
     local it = H.itemDB[itemID]
     if not it then return nil end
-    return it.name, "|Hitem:" .. itemID .. "|h", 1, 1, 1, "", "", 1, "", it.texture, it.price
+    return it.name, "|Hitem:" .. itemID .. "|h", it.quality or 1, 1, 1, "", "", 1, "", it.texture, it.price
   end,
 }
 

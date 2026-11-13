@@ -250,7 +250,10 @@ function NS.Options:PopulateSettings(content)
 
     { "Auto-sell Junk Only", "Auto-sell only poor-quality (grey) items and keep everything else, such as consumables. Use /pp keep to protect individual items instead",
       function() return NS.Data:ShouldAutoSellJunkOnly() end,
-      function(v) NS.Data:SetAutoSellJunkOnly(v) end },
+      function(v)
+        NS.Data:SetAutoSellJunkOnly(v)
+        if NS.UI then NS.UI:UpdateDisplay() end   -- pending value changes
+      end },
 
     { "Count Lockbox Gold", "Count gold found inside pickpocketed lockboxes and junkboxes when you open them",
       function() return NS.Data:ShouldTrackLockboxes() end,
