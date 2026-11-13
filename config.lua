@@ -9,7 +9,7 @@ NS.Config = {}
 
 -- Addon metadata
 NS.Config.ADDON_NAME = NS.name or "PickPocketTracker"
-NS.Config.VERSION = "1.11.1"
+NS.Config.VERSION = "1.12.0"
 
 -- Pick Pocket spell ID (unchanged since Classic)
 NS.Config.PICK_POCKET_SPELL_ID = 921
@@ -137,6 +137,8 @@ NS.Config.COINS_OF_AIR_ICON = "Interface/Icons/ability_monk_pathofmists"
 -- Auto-sell defaults
 NS.Config.AUTOSELL_DEFAULTS = {
   enabled      = true,
+  junkOnly     = false,  -- when true, only poor-quality (grey) items are auto-sold
+  junkQuality  = 0,      -- Enum.ItemQuality.Poor
   tickInterval = 0.2,  -- seconds between each sell action
   -- Consecutive ticks where a sell request visibly did nothing before we give
   -- up and tell the player. Covers a locked item as well as the API being

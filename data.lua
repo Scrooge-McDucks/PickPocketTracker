@@ -56,6 +56,7 @@ function NS.Data:InitializeUI()
     hideInCombat    = true,
     textMoney       = false,
     autoSell        = NS.Config.AUTOSELL_DEFAULTS.enabled,
+    autoSellJunkOnly = NS.Config.AUTOSELL_DEFAULTS.junkOnly,
     trackLockboxes  = NS.Config.LOCKBOX_DEFAULTS.enabled,
     point           = d.point,
     relativePoint   = d.relativePoint,
@@ -91,6 +92,8 @@ function NS.Data:InitializeItems()
   -- Pickpocketed items still unopened/unsold. Unlike `items` this survives
   -- the session, so a junkbox opened days later is still recognised.
   if db.pocketed == nil then db.pocketed = {} end
+  -- Items the player wants to keep: never auto-sold. { [itemID] = name|true }
+  if db.keepItems == nil then db.keepItems = {} end
 end
 
 -------------------------------------------------------------------------------
@@ -135,6 +138,17 @@ function NS.Data:SetCoinWindowHidden(v) self.db.coinWindowHidden = v end
 -- Auto-sell fence items
 function NS.Data:ShouldAutoSell()    return self.db.autoSell end
 function NS.Data:SetAutoSell(v)      self.db.autoSell = v end
+
+-- Auto-sell only poor-quality (grey) items, keeping everything else
+function NS.Data:ShouldAutoSellJunkOnly() return self.db.autoSellJunkOnly end
+function NS.Data:SetAutoSellJunkOnly(v)   self.db.autoSellJunkOnly = v end
+
+-- Keep list: items that are never auto-sold (persistent, per character)
+function NS.Data:IsKeptItem(id)        return self.db.keepItems[id] ~= nil end
+function NS.Data:GetKeptItems()        return self.db.keepItems end
+function NS.Data:SetKeptItem(id, name) self.db.keepItems[id] = name or true end
+function NS.Data:RemoveKeptItem(id)    self.db.keepItems[id] = nil end
+function NS.Data:ClearKeptItems()      self.db.keepItems = {} end
 
 -- Count gold found inside pickpocketed lockboxes
 function NS.Data:ShouldTrackLockboxes() return self.db.trackLockboxes end

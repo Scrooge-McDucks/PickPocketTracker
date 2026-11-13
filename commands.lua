@@ -71,6 +71,8 @@ function NS.Commands:HandleCommand(msg)
     self:HandleCoinsCommand(msg)
   elseif msg:match("^autosell") then
     self:HandleAutoSellCommand(msg)
+  elseif msg:match("^keep") then
+    self:HandleKeepCommand(msg)
   elseif msg:match("^lockbox") then
     self:HandleLockboxCommand(msg)
   else
@@ -113,6 +115,9 @@ function NS.Commands:HandleHelp()
   end
   NS.Utils:Print(nil, "  /pp autosell - Toggle auto-sell fence items")
   NS.Utils:Print(nil, "  /pp autosell on|off - Enable/disable auto-sell")
+  NS.Utils:Print(nil, "  /pp autosell junk on|off - Auto-sell only grey (junk) items")
+  NS.Utils:Print(nil, "  /pp keep [item] - Keep an item out of auto-sell (shift-click it; repeat to undo)")
+  NS.Utils:Print(nil, "  /pp keep list|clear - Show or empty the keep list")
   NS.Utils:Print(nil, "  /pp lockbox - Toggle counting gold from pickpocketed lockboxes")
   NS.Utils:Print(nil, "  /pp lockbox on|off - Enable/disable lockbox gold")
   NS.Utils:Print(nil, "  /pp help - Show this help")
@@ -327,6 +332,29 @@ function NS.Commands:HandleCoinsCommand(msg)
 end
 
 function NS.Commands:HandleAutoSellCommand(msg)
+  -- /pp autosell junk [on|off]
+  local junkArg = msg:match("^autosell%s+junk%s*(%S*)$")
+  if junkArg then
+    local enabled
+    if junkArg == "" then
+      enabled = not NS.Data:ShouldAutoSellJunkOnly()
+    elseif junkArg == "on" then
+      enabled = true
+    elseif junkArg == "off" then
+      enabled = false
+    else
+      NS.Utils:PrintError("Usage: /pp autosell junk [on|off]")
+      return
+    end
+    NS.Data:SetAutoSellJunkOnly(enabled)
+    if enabled then
+      NS.Utils:PrintSuccess("Auto-sell now sells only grey (junk) items")
+    else
+      NS.Utils:PrintWarning("Auto-sell now sells all tracked pickpocket items")
+    end
+    return
+  end
+
   local subCmd = msg:match("^autosell%s+(%S+)$")
 
   if not subCmd then
@@ -348,7 +376,7 @@ function NS.Commands:HandleAutoSellCommand(msg)
     NS.Data:SetAutoSell(false)
     NS.Utils:PrintWarning("Auto-sell fence items disabled")
   else
-    NS.Utils:PrintError("Usage: /pp autosell [on|off]")
+    NS.Utils:PrintError("Usage: /pp autosell [on|off|junk on|off]")
   end
 end
 
@@ -373,4 +401,55 @@ function NS.Commands:HandleLockboxCommand(msg)
   else
     NS.Utils:PrintWarning("Lockbox gold counting disabled")
   end
+end
+
+--- /pp keep <item link or ID>  toggles an item on the keep list
+--- /pp keep list               shows the list
+--- /pp keep clear              empties it
+function NS.Commands:HandleKeepCommand(msg)
+  local arg = NS.Utils:TrimString(msg:match("^keep%s*(.*)$") or "")
+
+  if arg == "" or arg == "list" then
+    local names = {}
+    for id, name in pairs(NS.Data:GetKeptItems()) do
+      names[#names + 1] = type(name) == "string" and name or ("item:" .. id)
+    end
+    if #names == 0 then
+      NS.Utils:PrintInfo("Keep list is empty. Type /pp keep and shift-click an item to keep it out of auto-sell.")
+    else
+      table.sort(names)
+      NS.Utils:PrintInfo("Kept out of auto-sell (" .. #names .. "):")
+      for _, name in ipairs(names) do NS.Utils:Print(nil, "  " .. name) end
+    end
+    return
+  end
+
+  if arg == "clear" then
+    NS.Data:ClearKeptItems()
+    NS.Utils:PrintWarning("Keep list cleared")
+    if NS.UI then NS.UI:UpdateDisplay() end
+    return
+  end
+
+  -- An item link ("...item:858:...") or a bare item ID
+  local itemID = tonumber(arg:match("item:(%d+)") or arg:match("^(%d+)$"))
+  if not itemID then
+    NS.Utils:PrintError("Usage: /pp keep [shift-click an item] | list | clear")
+    return
+  end
+
+  if NS.Data:IsKeptItem(itemID) then
+    local name = NS.Data:GetKeptItems()[itemID]
+    NS.Data:RemoveKeptItem(itemID)
+    NS.Utils:PrintWarning((type(name) == "string" and name or ("item:" .. itemID))
+      .. " removed from the keep list - auto-sell may sell it again")
+  else
+    NS.Data:SetKeptItem(itemID)
+    NS.Utils:PrintSuccess("item:" .. itemID .. " will be kept out of auto-sell")
+    -- Fill in the real name once the client has it (may be a cache miss)
+    NS.Utils:GetItemInfo(itemID, function(id, name)
+      if NS.Data:IsKeptItem(id) then NS.Data:SetKeptItem(id, name) end
+    end)
+  end
+  if NS.UI then NS.UI:UpdateDisplay() end
 end

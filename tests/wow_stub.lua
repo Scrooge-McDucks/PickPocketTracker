@@ -361,7 +361,9 @@ C_Container = {
   GetContainerItemInfo = function(bag, slot)
     local e = H.bags[bag] and H.bags[bag][slot]
     if not e then return nil end
-    return { itemID = e.itemID, stackCount = e.stackCount }
+    local def = H.itemDB[e.itemID]
+    return { itemID = e.itemID, stackCount = e.stackCount,
+             quality = def and def.quality or 1 }
   end,
   UseContainerItem = function(bag, slot)
     H.useCalls = H.useCalls + 1

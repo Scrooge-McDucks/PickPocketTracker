@@ -13,6 +13,10 @@
 -- Vendor sales: Bags are snapshotted on MERCHANT_SHOW. On MERCHANT_CLOSED
 -- we diff the snapshot to detect which tracked items were sold.
 --
+-- Keeping items: an item on the keep list (/pp keep) is never auto-sold and
+-- doesn't count as pending vendor value. With "junk only" on, auto-sell also
+-- leaves anything better than poor (grey) quality alone.
+--
 -- Auto-sell: when enabled, opens a queue/ticker that sells fence items one
 -- at a time, with graceful handling of items already sold by other addons.
 -- Every tick re-confirms the vendor window is open (outside it the sell call
@@ -280,6 +284,18 @@ function NS.Items:StopAutoSell()
   self.autoSellStalls = 0
 end
 
+--- Whether auto-sell is allowed to sell this item: not on the keep list, and
+--- (in junk-only mode) of poor quality. An unknown quality counts as not junk,
+--- so a doubtful item is kept rather than sold.
+function NS.Items:MayAutoSell(itemID, quality)
+  if NS.Data:IsKeptItem(itemID) then return false end
+  if NS.Data:ShouldAutoSellJunkOnly()
+    and quality ~= NS.Config.AUTOSELL_DEFAULTS.junkQuality then
+    return false
+  end
+  return true
+end
+
 --- Find the next bag slot containing a tracked fence item that we haven't
 --- already queued for sale this vendor session.  Skips any slot whose stack
 --- size exceeds the remaining tracked quantity (UseContainerItem sells the
@@ -297,7 +313,8 @@ function NS.Items:FindNextFenceSlot()
         local itemData = tracked[info.itemID]
         if itemData
           and itemData.isFence
-          and itemData.vendorPrice > 0 then
+          and itemData.vendorPrice > 0
+          and self:MayAutoSell(info.itemID, info.quality) then
           -- Only sell up to the tracked pickpocket quantity, minus what
           -- we've already sent to the vendor this session.
           local remaining = itemData.quantity - (pending[info.itemID] or 0)
@@ -322,8 +339,9 @@ function NS.Items:GetSessionVendorValue() return self.sessionVendorValue end
 
 function NS.Items:GetUnsoldValue()
   local total = 0
-  for _, d in pairs(NS.Data:GetItems()) do
-    if d.isFence then
+  for id, d in pairs(NS.Data:GetItems()) do
+    -- Kept items aren't going to the vendor, so they aren't pending value
+    if d.isFence and not NS.Data:IsKeptItem(id) then
       total = total + (d.quantity * d.vendorPrice)
     end
   end
@@ -366,8 +384,9 @@ function NS.Items:GetDetailedStats()
     for _, entry in ipairs(sorted) do
       local d = entry.value
       if d.isFence then
-        lines[#lines + 1] = string_format("  %s: %d looted, %d sold (%s), %d unsold (%s)",
-          d.name, d.quantity + d.soldQuantity, d.soldQuantity,
+        local kept = NS.Data:IsKeptItem(entry.key) and " [kept]" or ""
+        lines[#lines + 1] = string_format("  %s%s: %d looted, %d sold (%s), %d unsold (%s)",
+          d.name, kept, d.quantity + d.soldQuantity, d.soldQuantity,
           NS.Utils:FormatMoney(d.soldValue), d.quantity,
           NS.Utils:FormatMoney(d.vendorPrice * d.quantity))
       else
