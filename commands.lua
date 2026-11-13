@@ -347,6 +347,7 @@ function NS.Commands:HandleAutoSellCommand(msg)
       return
     end
     NS.Data:SetAutoSellJunkOnly(enabled)
+    if NS.UI then NS.UI:UpdateDisplay() end   -- pending value changes
     if enabled then
       NS.Utils:PrintSuccess("Auto-sell now sells only grey (junk) items")
     else

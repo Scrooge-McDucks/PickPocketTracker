@@ -262,6 +262,23 @@ H.check("unknown quality refused", I:MayAutoSell(100, nil) == false)
 D:SetAutoSellJunkOnly(false)
 H.check("with junk-only off it may sell", I:MayAutoSell(100, nil) == true)
 
+H.section("junk only: non-junk items are not pending vendor value")
+fresh()
+H.defineItem(100, "Item100", 10, nil, 0)   -- grey
+H.defineItem(300, "Item300", 40, nil, 1)   -- white
+T:OnPickPocketCast()
+I:OnLootReceived("|Hitem:100|h", 5)
+I:OnLootReceived("|Hitem:300|h", 2)
+H.eq("quality recorded with the item", D:GetItem(300).quality, 1)
+H.eq("junk-only off: both pending", I:GetUnsoldValue(), 5 * 10 + 2 * 40)
+D:SetAutoSellJunkOnly(true)
+H.eq("junk-only on: only the grey item pending", I:GetUnsoldValue(), 5 * 10)
+H.eq("confirmed haul total never includes pending items", T:GetTotalValue(), 0)
+H.check("stats mark the white item as kept", I:GetDetailedStats():find("Item300 [kept]", 1, true) ~= nil)
+H.check("grey item not marked", I:GetDetailedStats():find("Item100 [kept]", 1, true) == nil)
+D:SetAutoSellJunkOnly(false)
+H.eq("switching it off restores pending", I:GetUnsoldValue(), 5 * 10 + 2 * 40)
+
 H.section("keep list survives a reload")
 D:SetKeptItem(300, "Potion")
 NS = H.reload(MODULES)
