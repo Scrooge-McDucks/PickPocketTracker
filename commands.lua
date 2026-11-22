@@ -71,6 +71,8 @@ function NS.Commands:HandleCommand(msg)
     self:HandleCoinsCommand(msg)
   elseif msg:match("^autosell") then
     self:HandleAutoSellCommand(msg)
+  elseif msg:match("^haul") then
+    self:HandleHaulCommand(msg)
   elseif msg:match("^keep") then
     self:HandleKeepCommand(msg)
   elseif msg:match("^lockbox") then
@@ -115,6 +117,7 @@ function NS.Commands:HandleHelp()
   end
   NS.Utils:Print(nil, "  /pp autosell - Toggle auto-sell fence items")
   NS.Utils:Print(nil, "  /pp autosell on|off - Enable/disable auto-sell")
+  NS.Utils:Print(nil, "  /pp haul session|lifetime - What the haul window shows")
   NS.Utils:Print(nil, "  /pp autosell junk on|off - Auto-sell only grey (junk) items")
   NS.Utils:Print(nil, "  /pp keep [item] - Keep an item out of auto-sell (shift-click it; repeat to undo)")
   NS.Utils:Print(nil, "  /pp keep list|clear - Show or empty the keep list")
@@ -455,4 +458,27 @@ function NS.Commands:HandleKeepCommand(msg)
   end
   if NS.UI then NS.UI:UpdateDisplay() end
   if NS.Options then NS.Options:UpdateKeepList() end
+end
+
+--- /pp haul [session|lifetime] — what the haul window shows (bare toggles)
+function NS.Commands:HandleHaulCommand(msg)
+  local arg = msg:match("^haul%s*(%S*)$")
+  local lifetime
+  if arg == "" then
+    lifetime = not NS.Data:ShouldShowLifetimeHaul()
+  elseif arg == "lifetime" then
+    lifetime = true
+  elseif arg == "session" then
+    lifetime = false
+  else
+    NS.Utils:PrintError("Usage: /pp haul [session|lifetime]")
+    return
+  end
+  NS.Data:SetShowLifetimeHaul(lifetime)
+  if NS.UI then NS.UI:UpdateDisplay() end
+  if NS.Options and NS.Options.RefreshControls and NS.Options.frame then
+    NS.Options:RefreshControls()
+  end
+  NS.Utils:PrintSuccess(lifetime and "Haul window now shows your lifetime total"
+                                  or "Haul window now shows this session")
 end

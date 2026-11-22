@@ -220,6 +220,13 @@ function NS.Options:PopulateSettings(content)
       function() return not NS.Data:IsHidden() end,
       function(v) NS.Data:SetHidden(not v); NS.UI:UpdateVisibility() end },
 
+    { "Show Lifetime Total in Window", "Show this character's all-time total in the haul window instead of this session's. Hover the window to see both",
+      function() return NS.Data:ShouldShowLifetimeHaul() end,
+      function(v)
+        NS.Data:SetShowLifetimeHaul(v)
+        if NS.UI then NS.UI:UpdateDisplay() end
+      end },
+
     { "Lock Window Position", "Prevent accidental resizing",
       function() return NS.Data:IsLocked() end,
       function(v) NS.Data:SetLocked(v); NS.UI:OnLockSettingChanged() end },

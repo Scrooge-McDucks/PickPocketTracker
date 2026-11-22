@@ -8,7 +8,7 @@ Built for Retail (The War Within, 12.0.x). Rogue only — if you log in on a non
 
 Pickpocket a mob and the addon catches the gold and any items that drop. Gold shows up immediately in the haul window. Items show as "pending" until you vendor them — at that point the sale price gets added to your total.
 
-The haul window is a small bar you can drag anywhere and resize. The text auto-scales to fit the window width. Hover it for a tooltip breakdown of gold looted, items sold, and pending vendor value. A green `*` appears when you've got unsold pickpocketed items sitting in your bags.
+The haul window is a small bar you can drag anywhere and resize. The text auto-scales to fit the window width. Hover it for a tooltip breakdown of gold looted, items sold, and pending vendor value, plus your lifetime totals for this character and all characters. Tick "Show Lifetime Total in Window" (or `/pp haul lifetime`) to show your all-time total in the window itself. A green `*` appears when you've got unsold pickpocketed items sitting in your bags.
 
 The addon distinguishes between fence items (items with a vendor sell price) and unsellable loot (quest items, etc). Both are tracked for display and stats, but only fence items count toward your pending vendor value and are eligible for auto-sell.
 
@@ -59,6 +59,7 @@ Log in on a rogue and you're good.
 | `/pp account` | Account-wide totals (works on any class) |
 | `/pp reset` | Clear current session |
 | `/pp hide` / `show` | Toggle haul window |
+| `/pp haul session` / `lifetime` | Show this session or your lifetime total in the haul window |
 | `/pp lock` / `unlock` | Lock both windows (shift-drag still moves) |
 | `/pp icon on` / `off` | Pickpocket icon in the haul window |
 | `/pp money text` / `icons` | Show money as `5g 20s 30c` text or coin icons |
@@ -81,8 +82,9 @@ Log in on a rogue and you're good.
 
 Open with `/pp`, click the minimap button (left-click), the Addon Compartment entry, or go through Game Menu → AddOns.
 
-**Display** — twelve checkboxes:
+**Display** — thirteen checkboxes:
 - Show Main Window — toggle the haul bar on/off
+- Show Lifetime Total in Window — the haul window shows this character's all-time total instead of this session's (off by default)
 - Lock Window Position — prevent dragging and resizing (shift-drag bypasses the lock for repositioning)
 - Show Pickpocket Icon — the ability icon in the haul bar
 - Show Standalone Minimap Button — a separate draggable button around the minimap edge (off by default, the Addon Compartment is always available)

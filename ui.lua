@@ -119,12 +119,13 @@ function NS.UI:UpdateDisplay()
   local sold   = NS.Items    and NS.Items:GetSessionVendorValue() or 0
   local unsold = NS.Items    and NS.Items:GetUnsoldValue()        or 0
 
-  local confirmed = gold + sold
-  if unsold > 0 then
-    self.textFontString:SetText("Haul: " .. NS.Utils:FormatMoney(confirmed) .. " |cff66ffaa*|r")
-  else
-    self.textFontString:SetText("Haul: " .. NS.Utils:FormatMoney(confirmed))
+  local label, confirmed = "Haul: ", gold + sold
+  if NS.Data:ShouldShowLifetimeHaul() and NS.Stats and NS.Stats.db then
+    label, confirmed = "Lifetime: ", NS.Stats:GetCharacterTotal()
   end
+  local text = label .. NS.Utils:FormatMoney(confirmed)
+  if unsold > 0 then text = text .. " |cff66ffaa*|r" end
+  self.textFontString:SetText(text)
 
   self.cachedGold   = gold
   self.cachedSold   = sold
@@ -143,6 +144,7 @@ function NS.UI:SetupTooltip(frame)
     GameTooltip:AddLine("Pick Pocket Tracker")
 
     local g, s, u = NS.UI.cachedGold, NS.UI.cachedSold, NS.UI.cachedUnsold
+    GameTooltip:AddLine("This session", 1, 0.82, 0)
     if g > 0 then
       GameTooltip:AddDoubleLine("Gold looted:",   NS.Utils:FormatMoneyCompact(g), 1,1,1, 1,1,1)
       local box = NS.UI.cachedLockbox or 0
@@ -157,7 +159,16 @@ function NS.UI:SetupTooltip(frame)
       GameTooltip:AddDoubleLine("Pending vendor:", NS.Utils:FormatMoneyCompact(u), 0.4,1,0.67, 0.4,1,0.67)
     end
     if g == 0 and s == 0 and u == 0 then
-      GameTooltip:AddLine("No loot yet", 0.7, 0.7, 0.7)
+      GameTooltip:AddLine("No loot yet this session", 0.7, 0.7, 0.7)
+    end
+
+    -- Lifetime totals, so they don't need the options panel
+    if NS.Stats and NS.Stats.db then
+      GameTooltip:AddLine(" ")
+      GameTooltip:AddDoubleLine("Lifetime (this character):",
+        NS.Utils:FormatMoneyCompact(NS.Stats:GetCharacterTotal()), 1,0.82,0, 1,1,1)
+      GameTooltip:AddDoubleLine("Lifetime (all characters):",
+        NS.Utils:FormatMoneyCompact(NS.Stats:GetAccountTotal()), 1,0.82,0, 1,1,1)
     end
     GameTooltip:Show()
   end)
