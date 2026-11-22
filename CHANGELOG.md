@@ -1,3 +1,7 @@
+## v1.13.0
+
+- Added option to show your lifetime total in the haul window. Hover the window to see session and lifetime totals.
+
 ## v1.12.2
 
 - Options panel now shows how many items are on the keep list, with a Clear All button.

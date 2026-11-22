@@ -58,6 +58,7 @@ function NS.Data:InitializeUI()
     autoSell        = NS.Config.AUTOSELL_DEFAULTS.enabled,
     autoSellJunkOnly = NS.Config.AUTOSELL_DEFAULTS.junkOnly,
     trackLockboxes  = NS.Config.LOCKBOX_DEFAULTS.enabled,
+    haulLifetime    = false,   -- haul window shows this character's lifetime total
     point           = d.point,
     relativePoint   = d.relativePoint,
     offsetX         = d.offsetX,
@@ -154,6 +155,10 @@ end
 function NS.Data:SetKeptItem(id, name) self.db.keepItems[id] = name or true end
 function NS.Data:RemoveKeptItem(id)    self.db.keepItems[id] = nil end
 function NS.Data:ClearKeptItems()      self.db.keepItems = {} end
+
+-- Haul window shows the lifetime total instead of this session's
+function NS.Data:ShouldShowLifetimeHaul() return self.db.haulLifetime end
+function NS.Data:SetShowLifetimeHaul(v)   self.db.haulLifetime = v end
 
 -- Count gold found inside pickpocketed lockboxes
 function NS.Data:ShouldTrackLockboxes() return self.db.trackLockboxes end

@@ -352,6 +352,35 @@ NS.Options:Toggle()
 H.check("toggling twice is safe", NS.Options.frame ~= nil)
 NS.Options:RefreshControls()
 
+-- Haul window: session vs lifetime total
+do
+  local text = function() return NS.UI.mainFrame.text:GetText() or "" end
+  local key  = NS.Stats:GetCharacterKey()
+  NS.Tracking:ResetSession()
+  PickPocketTrackerAccountDB.characters[key].goldLooted = 123456
+  PickPocketTrackerAccountDB.characters[key].itemsSold  = 0
+  NS.UI:UpdateDisplay()
+  H.check("default shows the session haul", text():find("^Haul:") ~= nil)
+  slash("haul lifetime")
+  H.check("/pp haul lifetime switches the label", text():find("^Lifetime:") ~= nil)
+  H.check("window shows the character's lifetime total",
+    text():find(NS.Utils:FormatMoney(123456), 1, true) ~= nil)
+  slash("haul")
+  H.check("bare /pp haul toggles back", text():find("^Haul:") ~= nil)
+  slash("haul weekly")
+  H.check("bad /pp haul argument explains usage", H.chatHas("Usage: /pp haul"))
+  local function tooltipHas(needle)
+    for _, line in ipairs(H.tooltip) do
+      if line:find(needle, 1, true) then return true end
+    end
+    return false
+  end
+  H.tooltip = {}
+  NS.UI.mainFrame:GetScript("OnEnter")(NS.UI.mainFrame)
+  H.check("tooltip shows lifetime for this character", tooltipHas("Lifetime (this character):"))
+  H.check("tooltip shows lifetime for all characters", tooltipHas("Lifetime (all characters):"))
+end
+
 -- Keep list row in the options panel
 local O = NS.Options
 NS.Data:ClearKeptItems(); O:UpdateKeepList()
