@@ -11,7 +11,7 @@ local FILES  = H.tocFiles()
 local unpack = H.unpack
 local NS
 
-local BOX, CLOTH = 16885, 100
+local BOX, CLOTH, CLAM = 16885, 100, 5523
 local ITEM_GUID  = "Item-1-0-4000000012345678"
 local MOB_GUID   = "Creature-0-1-2-3-4-0000000001"
 
@@ -87,9 +87,11 @@ H.money = H.money + 5000
 fire("PLAYER_MONEY")
 H.eq("unrelated gold later is ignored", NS.Tracking:GetSessionGold(), 900)
 H.eq("box forgotten once opened", NS.Data:GetPocketedCount(BOX), 0)
-H.put(0, 2, BOX, 1)             -- a second box, not pickpocketed
+H.defineItem(CLAM, "Small Barnacled Clam", 0)
+H.itemDB[CLAM].openable = true
+H.put(0, 2, CLAM, 1)            -- an openable item that wasn't pickpocketed
 openAndLoot(2, 7000)
-H.eq("a box from elsewhere is not counted", NS.Tracking:GetSessionGold(), 900)
+H.eq("an openable item from elsewhere is not counted", NS.Tracking:GetSessionGold(), 900)
 
 H.section("the option switches it off, and back on")
 login()
@@ -187,6 +189,65 @@ pickpocket(BOX, 1)
 openAndLoot(1, 300)
 GetLootSourceInfo = savedSource
 H.eq("counted without a loot source API", NS.Tracking:GetSessionGold(), 300)
+
+H.section("box opened by a bag addon or macro (no Blizzard bag click) still counts")
+login()
+pickpocket(BOX, 1)
+H.guidItems[ITEM_GUID] = BOX
+H.loot = { ITEM_GUID }          -- loot window opens without UseContainerItem
+fire("LOOT_READY")
+fire("LOOT_OPENED")
+H.money = H.money + 1800
+fire("PLAYER_MONEY")
+H.bags[0][1] = nil
+H.loot = {}
+fire("LOOT_CLOSED")
+H.eq("counted from the loot window alone", NS.Tracking:GetSessionGold(), 1800)
+H.advance(5)
+H.check("looting ended", NS.Lockbox:IsLooting() == false)
+H.eq("box spent", NS.Data:GetPocketedCount(BOX), 0)
+
+H.section("a junkbox pickpocketed before lockbox tracking existed still counts")
+login()
+H.put(0, 3, BOX, 1)             -- never seen by CHAT_MSG_LOOT
+H.eq("not on the remembered list", NS.Data:GetPocketedCount(BOX), 0)
+H.guidItems[ITEM_GUID] = BOX
+H.loot = { ITEM_GUID }
+fire("LOOT_READY")
+H.money = H.money + 2200
+fire("PLAYER_MONEY")
+H.loot = {}
+fire("LOOT_CLOSED")
+H.eq("old junkbox counted by name", NS.Tracking:GetSessionGold(), 2200)
+H.advance(5)
+NS.Lockbox:IsLooting()
+H.eq("count never goes negative", NS.Data:GetPocketedCount(BOX), 0)
+
+H.section("an item that isn't a pickpocketed box is ignored even when mapped")
+login()
+H.defineItem(CLAM, "Small Barnacled Clam", 0)
+H.guidItems[ITEM_GUID] = CLAM
+H.loot = { ITEM_GUID }
+fire("LOOT_READY")
+H.money = H.money + 999
+fire("PLAYER_MONEY")
+H.loot = {}
+fire("LOOT_CLOSED")
+H.eq("clam gold not counted", NS.Tracking:GetSessionGold(), 0)
+
+H.section("lockbox debug prints what it sees")
+login()
+SlashCmdList["PICKPOCKETTRACKER"]("lockbox debug")
+H.check("debug switched on", NS.Lockbox.debug == true)
+pickpocket(BOX, 1)
+H.guidItems[ITEM_GUID] = BOX
+H.loot = { ITEM_GUID }
+fire("LOOT_READY")
+H.check("debug line printed", H.chatHas("[lockbox] loot opened"))
+H.loot = {}
+fire("LOOT_CLOSED")
+SlashCmdList["PICKPOCKETTRACKER"]("lockbox debug")
+H.check("debug switched off", NS.Lockbox.debug == false)
 
 H.section("gold inside the pickpocket window is ordinary pickpocket gold")
 login()

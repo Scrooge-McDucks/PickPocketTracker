@@ -79,6 +79,7 @@ function H.resetWorld()
   H.tooltip    = {}              -- GameTooltip lines
   H.categories = {}              -- Settings.RegisterAddOnCategory calls
   H.loot       = {}              -- source GUID per open loot slot
+  H.guidItems  = {}              -- item GUID -> item ID
   H.useCalls            = 0
   H.sellBlocked         = false
   H.usedOutsideMerchant = false
@@ -339,6 +340,7 @@ UnitGUID     = function(unit) return unit == "player" and "Player-1-00000001" or
 UnitAffectingCombat = function() return H.inCombat end
 
 C_Item = {
+  GetItemIDByGUID = function(guid) return H.guidItems[guid] end,
   -- Real signature returns 11+ values; name is 1, texture is 10, sellPrice 11.
   GetItemInfo = function(itemID)
     local it = H.itemDB[itemID]
@@ -389,6 +391,7 @@ C_Container = {
 -- Loot window: one source GUID per slot, set by tests via H.loot.
 GetNumLootItems   = function() return #H.loot end
 GetLootSourceInfo = function(slot) return H.loot[slot], 1 end
+H.guidItems = {}   -- item GUID -> item ID, for C_Item.GetItemIDByGUID
 
 -- Post-hooks, as the real hooksecurefunc installs them. H.reload() retires
 -- every hook, the way a /reload starts from a fresh Lua state.

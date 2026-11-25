@@ -388,6 +388,14 @@ function NS.Commands:HandleLockboxCommand(msg)
   local subCmd = msg:match("^lockbox%s+(%S+)$")
   local enabled
 
+  -- /pp lockbox debug: print what the addon sees when a loot window opens
+  if subCmd == "debug" then
+    NS.Lockbox.debug = not NS.Lockbox.debug
+    NS.Utils:PrintInfo("Lockbox debug " .. (NS.Lockbox.debug and "on" or "off")
+      .. (NS.Lockbox.debug and " - open a box and the details print to chat" or ""))
+    return
+  end
+
   if not subCmd then
     enabled = not NS.Data:ShouldTrackLockboxes()
   elseif subCmd == "on" then
@@ -395,7 +403,7 @@ function NS.Commands:HandleLockboxCommand(msg)
   elseif subCmd == "off" then
     enabled = false
   else
-    NS.Utils:PrintError("Usage: /pp lockbox [on|off]")
+    NS.Utils:PrintError("Usage: /pp lockbox [on|off|debug]")
     return
   end
 
