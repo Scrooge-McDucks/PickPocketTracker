@@ -5,11 +5,14 @@
 -- days later, far outside the post-cast detection window in tracking.lua, so
 -- its gold was never counted.
 --
--- Detection, in three steps:
---   1. A post-hook on C_Container.UseContainerItem notices the player using a
---      bag item that data.lua remembers as pickpocketed (and still unopened).
---   2. LOOT_READY / LOOT_OPENED must follow within a few seconds, and the loot
---      must come from an item (source GUID "Item-...") rather than a corpse.
+-- Detection:
+--   1. On LOOT_READY / LOOT_OPENED, the loot's source GUID ("Item-...") is
+--      mapped to an item ID. If that item is a box we pickpocketed (or any
+--      junkbox), the box is being opened. This works whatever opened it:
+--      Blizzard's bags, a bag addon, or a /use macro.
+--   2. Fallback for clients that can't map a GUID to an item: a post-hook on
+--      C_Container.UseContainerItem notices the player clicking such a box,
+--      and an item-sourced loot window must follow within a few seconds.
 --   3. Until shortly after LOOT_CLOSED, IsLooting() is true and tracking.lua
 --      attributes any gold gained to pickpocketing.
 --
@@ -52,7 +55,7 @@ function NS.Lockbox:OnUseContainerItem(bag, slot)
 
   local info = C_Container.GetContainerItemInfo(bag, slot)
   if not info or not info.itemID then return end
-  if NS.Data:GetPocketedCount(info.itemID) <= 0 then return end
+  if not self:IsPickpocketBox(info.itemID) then return end
 
   self.pending = { itemID = info.itemID, bag = bag, slot = slot, at = GetTime() }
 end
@@ -61,20 +64,38 @@ end
 -- Step 2 — a loot window opens
 -------------------------------------------------------------------------------
 
---- True if the open loot comes from an item. If the client can't tell us the
---- source at all, give the benefit of the doubt: the player did just click a
---- pickpocketed item. A corpse or chest (Creature-/GameObject- GUID) is refused.
-local function LootIsFromItem()
-  if not GetLootSourceInfo or not GetNumLootItems then return true end
+--- Whether an item is a box we should count: one remembered as pickpocketed,
+--- or a junkbox (only ever obtained by pickpocketing, so boxes picked before
+--- this addon tracked them still count). The name check is English-only.
+function NS.Lockbox:IsPickpocketBox(itemID)
+  if not itemID then return false end
+  if NS.Data:GetPocketedCount(itemID) > 0 then return true end
+  local name = NS.Utils.GetItemName and NS.Utils:GetItemName(itemID)
+  return type(name) == "string" and name:find("Junkbox", 1, true) ~= nil
+end
+
+--- Look at where the open loot comes from. Returns:
+---   itemID  of the item being looted, when the client can tell us (nil if not)
+---   fromItem  true if any loot comes from an item
+---   sawSource true if the client reported any source at all
+local function InspectLootSource()
+  if not GetLootSourceInfo or not GetNumLootItems then return nil, false, false end
   local sawSource = false
   for i = 1, GetNumLootItems() do
     local guid = GetLootSourceInfo(i)
     if type(guid) == "string" then
-      if guid:find("^Item%-") then return true end
       sawSource = true
+      if guid:find("^Item%-") then
+        local id = C_Item and C_Item.GetItemIDByGUID and C_Item.GetItemIDByGUID(guid)
+        return id, true, true
+      end
     end
   end
-  return not sawSource
+  return nil, false, sawSource
+end
+
+function NS.Lockbox:Debug(fmt, ...)
+  if self.debug then NS.Utils:PrintInfo("[lockbox] " .. string_format(fmt, ...)) end
 end
 
 function NS.Lockbox:OnLootOpened()
@@ -88,11 +109,31 @@ function NS.Lockbox:OnLootOpened()
     self:Finish()
   end
 
+  if not NS.Data.db or not NS.Data:ShouldTrackLockboxes() then return end
+
+  local itemID, fromItem, sawSource = InspectLootSource()
+  self:Debug("loot opened: item=%s fromItem=%s source=%s clicked=%s",
+    tostring(itemID), tostring(fromItem), tostring(sawSource), tostring(p and p.itemID))
+
+  -- Main path: the loot window itself says which item is being opened. This
+  -- works however the box was opened: Blizzard bags, a bag addon, a macro.
+  if itemID then
+    if self:IsPickpocketBox(itemID) then
+      local bag, slot
+      if p and p.itemID == itemID then bag, slot = p.bag, p.slot end
+      self.active = { itemID = itemID, bag = bag, slot = slot }
+      self:Debug("counting gold from item %d", itemID)
+    end
+    return
+  end
+
+  -- Fallback for clients that can't map the loot to an item: rely on the
+  -- player having just clicked a pickpocketed item in Blizzard's bags.
   if not p then return end
   if GetTime() - p.at > NS.Config.LOCKBOX_DEFAULTS.openWindow then return end
-  if not LootIsFromItem() then return end
-
+  if sawSource and not fromItem then return end   -- a corpse or chest
   self.active = { itemID = p.itemID, bag = p.bag, slot = p.slot }
+  self:Debug("counting gold from clicked item %d", p.itemID)
 end
 
 -------------------------------------------------------------------------------
@@ -129,8 +170,10 @@ function NS.Lockbox:Finish()
   self.active = nil
   if not a then return end
 
-  local info = C_Container.GetContainerItemInfo(a.bag, a.slot)
-  if a.credited or not info or info.itemID ~= a.itemID then
-    NS.Data:RemovePocketed(a.itemID, 1)
+  local spent = a.credited
+  if not spent and a.bag and a.slot then
+    local info = C_Container.GetContainerItemInfo(a.bag, a.slot)
+    spent = not info or info.itemID ~= a.itemID
   end
+  if spent then NS.Data:RemovePocketed(a.itemID, 1) end
 end

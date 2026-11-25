@@ -76,6 +76,7 @@ Log in on a rogue and you're good.
 | `/pp keep list` / `clear` | Show or empty the keep list |
 | `/pp lockbox` | Toggle counting gold from pickpocketed lockboxes |
 | `/pp lockbox on` / `off` | Explicit enable/disable |
+| `/pp lockbox debug` | Print what the addon sees when you open a box |
 | `/pp help` | All commands |
 
 ## Options panel
@@ -152,7 +153,7 @@ Items aren't tracked across sessions. If you log out with unsold pickpocketed st
 
 Auto-sell only sells stacks that fit entirely within the tracked pickpocket quantity. If you had 3 of an item from pickpocketing but your bags contain a stack of 10 (from other sources mixed in), that stack is skipped to avoid selling non-pickpocketed items.
 
-Lockbox gold only counts for boxes pickpocketed on this character after v1.11.0, and only when the box is opened by clicking it in your bags — a `/use` macro isn't detected. Items found inside a box aren't tracked, just the gold.
+Lockbox gold counts for any junkbox, and for any other box pickpocketed on this character, however you open it (Blizzard bags, a bag addon or a macro). Junkboxes are recognised by their English name, so on other client languages only boxes pickpocketed since v1.11.0 count. Items found inside a box aren't tracked, just the gold. If gold from a box isn't counted, `/pp lockbox debug` prints what the addon sees when you open it.
 
 ## Files
 

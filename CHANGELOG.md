@@ -1,3 +1,7 @@
+## v1.13.1
+
+- Fixed lockbox gold not being counted when boxes are opened from a bag addon or a macro. Junkboxes pickpocketed before 1.11.0 now count too.
+
 ## v1.13.0
 
 - Added option to show your lifetime total in the haul window. Hover the window to see session and lifetime totals.
