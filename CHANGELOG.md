@@ -1,3 +1,7 @@
+## v1.13.2
+
+- Lockbox gold is now confirmed by the box leaving your bags, so it works however you open the box.
+
 ## v1.13.1
 
 - Fixed lockbox gold not being counted when boxes are opened from a bag addon or a macro. Junkboxes pickpocketed before 1.11.0 now count too.
