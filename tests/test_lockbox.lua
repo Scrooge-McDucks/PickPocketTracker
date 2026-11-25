@@ -27,6 +27,7 @@ local function login()
   H.defineItem(CLOTH, "Silk Cloth", 50)
   H.itemDB[BOX].openable = true
   H.merchantOpen = false
+  H.autoRunAfters = true        -- the close-grace timer fires straight away
   H.money = 0
   fire("PLAYER_MONEY")          -- settle the money baseline
 end
@@ -75,10 +76,14 @@ H.eq("tooltip breakdown cached", NS.UI.cachedLockbox, 4200)
 H.section("auto-loot: money arriving just after LOOT_CLOSED still counts")
 login()
 pickpocket(BOX, 1)
+H.autoRunAfters = false         -- let the close-grace timer wait
 openAndLoot(1, 0)
 H.advance(0.5)
 H.money = H.money + 900
 fire("PLAYER_MONEY")
+H.eq("held until the bags are checked", NS.Tracking:GetSessionGold(), 0)
+H.runAfters()
+H.autoRunAfters = true
 H.eq("late gold counted", NS.Tracking:GetSessionGold(), 900)
 
 H.section("the box is spent afterwards")
@@ -118,16 +123,20 @@ pickpocket(CLOTH, 1)
 openAndLoot(1, 8000, MOB_GUID, false)
 H.eq("mob gold ignored", NS.Tracking:GetSessionGold(), 0)
 
-H.section("a loot window that opens too late is ignored")
+H.section("another container opened while a junkbox sits in the bags is not counted")
 login()
 pickpocket(BOX, 1)
-C_Container.UseContainerItem(0, 1)
-H.advance(NS.Config.LOCKBOX_DEFAULTS.openWindow + 0.1)
-H.loot = { ITEM_GUID }
-fire("LOOT_OPENED")
+H.defineItem(CLAM, "Small Barnacled Clam", 0)
+H.put(0, 2, CLAM, 1)
+H.loot = { ITEM_GUID }          -- client can't say which item
+fire("LOOT_READY")
 H.money = H.money + 1000
 fire("PLAYER_MONEY")
-H.eq("not counted", NS.Tracking:GetSessionGold(), 0)
+H.bags[0][2] = nil              -- the clam is used up, the box stays
+H.loot = {}
+fire("LOOT_CLOSED")
+H.eq("clam gold not counted", NS.Tracking:GetSessionGold(), 0)
+H.eq("box still remembered", NS.Data:GetPocketedCount(BOX), 1)
 
 H.section("closing the loot window untouched keeps the box for later")
 login()
@@ -145,7 +154,7 @@ pickpocket(CLOTH, 1)
 H.merchantOpen = true
 fire("MERCHANT_SHOW")
 H.tick(3)                       -- auto-sell uses the same UseContainerItem call
-H.check("no lockbox pending from a sale", NS.Lockbox.pending == nil)
+H.check("no loot window watched after a sale", NS.Lockbox.active == nil)
 H.merchantOpen = false
 fire("MERCHANT_CLOSED")
 H.eq("sold item no longer remembered", NS.Data:GetPocketedCount(CLOTH), 0)
@@ -235,6 +244,51 @@ H.loot = {}
 fire("LOOT_CLOSED")
 H.eq("clam gold not counted", NS.Tracking:GetSessionGold(), 0)
 
+H.section("bag addon + client that can't name the item: the box leaving the bags confirms it")
+login()
+pickpocket(BOX, 1)
+H.loot = { ITEM_GUID }          -- no GUID mapping, no Blizzard bag click
+fire("LOOT_READY")
+fire("LOOT_OPENED")
+H.money = H.money + 3300
+fire("PLAYER_MONEY")
+H.bags[0][1] = nil
+H.loot = {}
+fire("LOOT_CLOSED")
+H.eq("counted from the bag check alone", NS.Tracking:GetSessionGold(), 3300)
+H.eq("box forgotten", NS.Data:GetPocketedCount(BOX), 0)
+
+H.section("gold taken but items left in the box")
+login()
+pickpocket(BOX, 1)
+H.guidItems[ITEM_GUID] = BOX    -- client names the item
+H.loot = { ITEM_GUID }
+fire("LOOT_READY")
+H.money = H.money + 700
+fire("PLAYER_MONEY")
+H.loot = {}
+fire("LOOT_CLOSED")             -- box still in the bags
+H.eq("counted when the client names the box", NS.Tracking:GetSessionGold(), 700)
+H.eq("box kept for its remaining items", NS.Data:GetPocketedCount(BOX), 1)
+
+H.section("a loot window left open is not watched forever")
+login()
+pickpocket(BOX, 1)
+H.loot = { ITEM_GUID }
+fire("LOOT_READY")
+H.check("watching", NS.Lockbox:IsLooting())
+H.advance(NS.Config.LOCKBOX_DEFAULTS.maxOpen + 1)
+H.money = H.money + 500
+fire("PLAYER_MONEY")
+H.check("stopped watching", NS.Lockbox.active == nil)
+H.eq("later gold not held", NS.Tracking:GetSessionGold(), 0)
+
+H.section("no box in the bags means nothing is watched")
+login()
+H.loot = { ITEM_GUID }
+fire("LOOT_READY")
+H.check("nothing watched", NS.Lockbox.active == nil)
+
 H.section("lockbox debug prints what it sees")
 login()
 SlashCmdList["PICKPOCKETTRACKER"]("lockbox debug")
@@ -244,6 +298,12 @@ H.guidItems[ITEM_GUID] = BOX
 H.loot = { ITEM_GUID }
 fire("LOOT_READY")
 H.check("debug line printed", H.chatHas("[lockbox] loot opened"))
+H.loot = {}
+fire("LOOT_CLOSED")
+H.check("debug reports the result", H.chatHas("[lockbox] loot closed"))
+H.loot = { MOB_GUID }
+fire("LOOT_READY")
+H.check("corpse loot reported as ignored", H.chatHas("from the world, ignored"))
 H.loot = {}
 fire("LOOT_CLOSED")
 SlashCmdList["PICKPOCKETTRACKER"]("lockbox debug")

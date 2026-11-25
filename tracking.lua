@@ -68,16 +68,21 @@ function NS.Tracking:OnMoneyChanged()
     return delta
   end
 
-  -- Outside the window: still ours if a pickpocketed lockbox is being looted.
+  -- Outside the window: possibly a pickpocketed lockbox being looted. The
+  -- gold is held until lockbox.lua confirms the box left the bags.
   if NS.Lockbox and NS.Lockbox:IsLooting() then
-    self.sessionGold        = self.sessionGold        + delta
-    self.sessionLockboxGold = self.sessionLockboxGold + delta
-    if NS.Stats then NS.Stats:RecordLockboxGold(delta) end
-    NS.Lockbox:OnGoldCredited(delta)
-    return delta
+    NS.Lockbox:Hold(delta)
   end
 
   return 0
+end
+
+--- Credit gold confirmed as coming from a pickpocketed lockbox.
+function NS.Tracking:CreditLockboxGold(amount)
+  if amount <= 0 then return end
+  self.sessionGold        = self.sessionGold        + amount
+  self.sessionLockboxGold = self.sessionLockboxGold + amount
+  if NS.Stats then NS.Stats:RecordLockboxGold(amount) end
 end
 
 --- True if we're still within the detection window after the last cast.

@@ -153,7 +153,7 @@ Items aren't tracked across sessions. If you log out with unsold pickpocketed st
 
 Auto-sell only sells stacks that fit entirely within the tracked pickpocket quantity. If you had 3 of an item from pickpocketing but your bags contain a stack of 10 (from other sources mixed in), that stack is skipped to avoid selling non-pickpocketed items.
 
-Lockbox gold counts for any junkbox, and for any other box pickpocketed on this character, however you open it (Blizzard bags, a bag addon or a macro). Junkboxes are recognised by their English name, so on other client languages only boxes pickpocketed since v1.11.0 count. Items found inside a box aren't tracked, just the gold. If gold from a box isn't counted, `/pp lockbox debug` prints what the addon sees when you open it.
+Lockbox gold counts for any junkbox, and for any other box pickpocketed on this character, however you open it (Blizzard bags, a bag addon or a macro). Gold from an open loot window is held until the loot window closes; if a box has left your bags by then, the gold is counted. If you take the gold but leave items inside the box, it may not count. Junkboxes are recognised by their English name, so on other client languages only boxes pickpocketed since v1.11.0 count. Items found inside a box aren't tracked, just the gold. If gold from a box isn't counted, `/pp lockbox debug` prints what the addon sees when you open it.
 
 ## Files
 
